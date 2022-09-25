@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsEnum, IsNotEmpty, IsString } from 'class-validator';
-import { IdentityEnum } from '@/enum/roles';
+import { IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { DepartmentEnum, IdentityEnum } from '@/enum/roles';
 import { UserDto } from '../users';
+import { RecruitmentStatus } from '@/enum/recruitment';
 
 export class AllRecruitmentDto {
   @ApiProperty()
@@ -16,21 +17,21 @@ export class AllRecruitmentDto {
   @ApiProperty({ description: '存照' })
   inchPhoto: string;
 
-  @IsEnum(IdentityEnum)
+  @IsEnum(DepartmentEnum)
   @IsNotEmpty()
   @ApiProperty({
     description: '第一志愿',
     example: '算法竞赛部',
   })
-  firstChoice: IdentityEnum;
+  firstChoice: DepartmentEnum;
 
-  @IsEnum(IdentityEnum)
+  @IsEnum(DepartmentEnum)
   @IsNotEmpty()
   @ApiProperty({
     description: '第二志愿',
     example: '项目实践部',
   })
-  secondChoice: IdentityEnum;
+  secondChoice: DepartmentEnum;
 
   @IsBoolean()
   @IsNotEmpty()
@@ -63,4 +64,17 @@ export class AllRecruitmentDto {
     example: false,
   })
   isDeliver: boolean;
+
+  @IsNotEmpty()
+  @ApiProperty({ description: '最终录取部门', enum: DepartmentEnum })
+  finallyDepartment: DepartmentEnum;
+
+  
+  @IsNotEmpty()
+  @ApiProperty({
+    description: '状态',
+    enum: RecruitmentStatus,
+    default: RecruitmentStatus.Accepted
+  })
+  status: RecruitmentStatus;
 }

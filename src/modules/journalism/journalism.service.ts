@@ -1,6 +1,6 @@
 import { Result } from '@/common/interface/result';
 import { Api } from '@/common/utils/api';
-import { AllJournalismDto, CreateJournalismDto, UpdateJournalismDto } from '@/dto/journalism';
+import { AllJournalismDto, CreateJournalismDto, GetJournalismDto, UpdateJournalismDto } from '@/dto/journalism';
 import { journalism } from '@/entities/journalism';
 import { AdminRole } from '@/enum/roles';
 import { Injectable } from '@nestjs/common';
@@ -30,7 +30,7 @@ export class JournalismService {
     page: number,
     pageSize: number,
     content: string,
-  ): Promise<Result<AllJournalismDto>> {
+  ): Promise<Result<GetJournalismDto>> {
     let where: any;
     // 如果是root就把所有的返回给他
     // 不对作者筛选就可以返回所有的
@@ -39,14 +39,13 @@ export class JournalismService {
     
     let [list, total] = await this.journalismRepository.findAndCount({
       where,
+      relations: ['author'],
       skip: (page - 1) * pageSize,
       take: pageSize
     })
     return Api.pagerOk({
       total,
-      page,
       list,
-      limit: pageSize
     })
   }
   // 创建一个新闻

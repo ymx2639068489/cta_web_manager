@@ -6,7 +6,7 @@ import { AllAdminUserDto, CreateAdminDto, SetAdminPasswordDto, UpdateAdminSelfIn
 import { AdminRole, cadresRole, DepartmentEnum, userAdminRole, userRole } from '@/enum/roles';
 import { Api } from '@/common/utils/api';
 import { Result } from '@/common/interface/result';
-
+import { MD5 } from 'crypto-js';
 @Injectable()
 export class UserService {
   constructor(
@@ -37,7 +37,13 @@ export class UserService {
     list.forEach(item => {
       const { department, duty } = item.identity
       delete item.identity
-      if (department === '理事会' || duty === '部长') data[department][duty] = item
+      console.log(department, duty);
+      
+      if (
+        department === '理事会' ||
+        duty === '部长' ||
+        duty === '秘书长'
+      ) data[department][duty] = item
       else data[department][duty].push(item)
     })
     return Api.ok(data)
@@ -59,9 +65,7 @@ export class UserService {
     }
     return Api.pagerOk({
       total: Math.ceil(total / pageSize),
-      page,
-      list,
-      limit: pageSize
+      list
     })
   }
 
@@ -100,6 +104,17 @@ export class UserService {
   // 获取当届所有干部
   async findAllCadres() {
     return await this.userRepository.find({
+      select: [
+        'id',
+        'username',
+        'studentId',
+        'gender',
+        'college',
+        'major',
+        'class',
+        'avatarUrl',
+        'identity'
+      ],
       where: userAdminRole.map((item: number) => ({ identity: item })),
       relations: ['identity']
     })
@@ -142,7 +157,12 @@ export class UserService {
   }
   // 获取所有角色
   async getRoles() {
-    return this.rolesRepository.find()
+    return await this.rolesRepository.find()
+  }
+  async getRolesById(id: number) {
+    return await this.rolesRepository.findOne({
+      where: { id }
+    })
   }
   // 获取角色的信息， 包括路由
   async getRoleByName(roleName: string) {
@@ -187,8 +207,6 @@ export class UserService {
     })
 
     return Api.pagerOk({
-      limit: pageSize,
-      page,
       list: list[0],
       total: Math.ceil(list[1] / pageSize)
     })
@@ -206,7 +224,7 @@ export class UserService {
       await this.adminUserRepository.save(
         await this.adminUserRepository.preload({
           ...admin,
-          password: setAdminPasswordDto.password
+          password: MD5(setAdminPasswordDto.password).toString()
         })
       )
       return { message: '修改成功', code: 0 }

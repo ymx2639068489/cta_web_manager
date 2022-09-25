@@ -1,3 +1,4 @@
+import { Api } from '@/common/utils/api';
 import { ActiveTime } from '@/entities/active-time';
 import { activeName } from '@/enum/active-time';
 import { Injectable } from '@nestjs/common';
@@ -20,8 +21,8 @@ export class ActiveTimeService {
     return _1.startTime <= nowDate && nowDate <= _1.endTime
   }
 
-  async setStartTime(activeName: string, date: Date) {
-    const item = await this.activeTimeRepository.find({
+  async setStartTime(activeName: string, date: number) {
+    const item = await this.activeTimeRepository.findOne({
       where: { activeName }
     })
     if (!item) return { code: -1, message: 'active is not found' }
@@ -29,15 +30,16 @@ export class ActiveTimeService {
       await this.activeTimeRepository.save(
         await this.activeTimeRepository.preload({
           ...item,
-          startTime: date
+          startTime: new Date(date)
         })
       )
+      return Api.ok()
     } catch (err) {
       return { code: -2, message: err.message }
     }
   }
-  async setEndTime(activeName: string, date: Date) {
-    const item = await this.activeTimeRepository.find({
+  async setEndTime(activeName: string, date: number) {
+    const item = await this.activeTimeRepository.findOne({
       where: { activeName }
     })
     if (!item) return { code: -1, message: 'active is not found' }
@@ -45,15 +47,22 @@ export class ActiveTimeService {
       await this.activeTimeRepository.save(
         await this.activeTimeRepository.preload({
           ...item,
-          endTime: date
+          endTime: new Date(date)
         })
       )
+      return Api.ok()
     } catch (err) {
       return { code: -2, message: err.message }
     }
   }
   // 获取所有活动
   async getAllActiveList() {
-    return await this.activeTimeRepository.find()
+    return Api.ok(
+      (await this.activeTimeRepository.find()).map((item: ActiveTime) => ({
+        ...item,
+        startTime: new Date(item.startTime).getTime(),
+        endTime: new Date(item.endTime).getTime()
+      }))
+    )
   }
 }

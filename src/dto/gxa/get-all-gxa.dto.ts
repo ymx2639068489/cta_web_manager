@@ -1,4 +1,5 @@
-import { ApiProperty, PickType } from "@nestjs/swagger";
+import { ApiProperty, IntersectionType, PickType } from "@nestjs/swagger";
+import { GxaDto } from "./allGxa.dto";
 import { AllGxaWorkDto } from "./AllGxaWork.dto";
 
 class temp1 extends PickType(AllGxaWorkDto, [
@@ -21,3 +22,19 @@ export class GetAllGxaDto {
   @ApiProperty({ description: '动态作品列表', isArray: true })
   dynamic: temp1;
 }
+
+
+export class GetFinalsTeamList extends IntersectionType(
+  class extends PickType(AllGxaWorkDto, [
+    'websiteIntroduction',
+    'showImg',
+  ]) {},
+  class extends PickType(GxaDto, [
+    'group',
+    'leader',
+    'teamMember1',
+    'teamMember2',
+    'teamName',
+    'workName'
+  ]) {}
+) {}

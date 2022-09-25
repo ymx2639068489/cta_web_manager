@@ -14,7 +14,11 @@ export class BannerService {
     return await this.bannerRepository.findOne({ where: { id }});
   }
   async findAll() {
-    return Api.ok(await this.bannerRepository.find())
+    const list = await this.bannerRepository.find()
+    return Api.pagerOk({
+      list,
+      total: 1
+    })
   }
   async createItem(createBannerDto: CreateBannerDto) {
     try {

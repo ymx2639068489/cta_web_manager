@@ -2,7 +2,7 @@ import { Roles } from '@/common/decorators/Role/roles.decorator';
 import { warpResponse } from '@/common/interceptors';
 import { Result } from '@/common/interface/result';
 import { RolesDto } from '@/dto/admin-user';
-import { AllRouterDto, GetRouterDto } from '@/dto/routers';
+import { GetRouterNoChildrenDto, GetRouterDto } from '@/dto/routers';
 import { AdminRole, userAdminRole, userRole } from '@/enum/roles';
 import { Body, Controller, Get, Param, Post, Req, UnauthorizedException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -11,6 +11,7 @@ import { RoutersService } from './routers.service';
 import { Roles as RolesEntity } from '@/entities/admin/roles.entity';
 import { GetRolesDto, UpdateRoleDto } from '@/dto/roles';
 import { Api } from '@/common/utils/api';
+import { SwaggerOk, SwaggerPagerOk } from '@/common/decorators';
 
 @ApiBearerAuth()
 @ApiTags('routers')
@@ -24,7 +25,7 @@ export class RoutersController {
   @Get('getRoles')
   @Roles(AdminRole.root)
   @ApiOperation({ description: '获取所有的角色, data是一个数组' })
-  @ApiResponse({ type: warpResponse({ type: GetRolesDto }) })
+  @SwaggerPagerOk(GetRolesDto)
   async getRoles(): Promise<Result<GetRolesDto[]>> {
     return {
       code: 0,
@@ -38,7 +39,7 @@ export class RoutersController {
   @Roles(AdminRole.root)
   @ApiParam({ name: 'role' })
   @ApiOperation({ description: '获取role对应的路由' })
-  @ApiResponse({ type: warpResponse({ type: '' }) })
+  @SwaggerPagerOk(GetRouterNoChildrenDto)
   async getRouterByRole(@Param('role') role: string) {
     const data = this.routersService.getRouterByRole(
       (await this.userService.getRoleByName(role)).routers
@@ -53,7 +54,7 @@ export class RoutersController {
   @Post('setRoleRouters')
   @Roles(AdminRole.root)
   @ApiOperation({ description: ''})
-  @ApiResponse({ type: warpResponse({ type: 'string' }) })
+  @SwaggerOk()
   async setRoleRouters(@Body() updateRoleDto: UpdateRoleDto) {
     try {
       await this.routersService.setRoleRouter(
@@ -68,7 +69,7 @@ export class RoutersController {
 
   @Get('menus')
   @ApiOperation({ description: '获取用户对应的路由' })
-  @ApiResponse({ type: warpResponse({ type: GetRouterDto }) })
+  @SwaggerPagerOk(GetRouterDto)
   async getMenus(@Req() { user }: any): Promise<Result<GetRouterDto>> {
     return await this.routersService.getMenus(user)
   }

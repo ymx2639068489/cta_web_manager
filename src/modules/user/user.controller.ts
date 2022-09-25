@@ -1,10 +1,10 @@
 import { SwaggerOk, SwaggerPagerOk } from '@/common/decorators';
-import { NoAuth } from '@/common/decorators/Role/customize';
 import { Roles } from '@/common/decorators/Role/roles.decorator';
-import { getUserInfoDto } from '@/dto/users';
+import { Api } from '@/common/utils/api';
+import { GetUserInfoDto } from '@/dto/users';
 import { AdminRole } from '@/enum/roles';
 import { Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
 
 @ApiTags('user')
@@ -20,7 +20,7 @@ export class UserController {
   @ApiQuery({ name: 'page' })
   @ApiQuery({ name: 'pageSize' })
   @ApiQuery({ name: 'username', required: false })
-  @SwaggerPagerOk(getUserInfoDto)
+  @SwaggerPagerOk(GetUserInfoDto)
   async findAll(
     @Query('page') page: number,
     @Query('pageSize') pageSize: number,
@@ -32,13 +32,15 @@ export class UserController {
   @Get('findOne/:studentId')
   @Roles(AdminRole.root, AdminRole.user_admin)
   @ApiParam({ name: 'studentId' })
-  @SwaggerOk(getUserInfoDto)
+  @SwaggerOk(GetUserInfoDto)
   async findOne(@Param('studentId') studentId: string) {
-    return await this.userService.findOneByStudentId(studentId)
+    const _ = await this.userService.findOneByStudentId(studentId)
+    if (_) return Api.ok(_)
+    return Api.err(-1, 'user is not found')
   }
 
   @Get('getOfficial')
-  // @NoAuth(0)
+  @ApiOperation({ description: '获取当届所有成员' })
   @SwaggerOk()
   async getOfficial() {
     return await this.userService.getOfficial()

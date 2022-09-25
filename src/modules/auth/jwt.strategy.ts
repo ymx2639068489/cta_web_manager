@@ -38,11 +38,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ].includes(user.identity.id)) _ = AdminRole.president
       else if (userAdminRole.includes(user.identity.id)) _ = AdminRole.minister
       else _ = AdminRole.official
-      
+      const roles = await this.userService.getRolesById(_)
       return {
         ...user,
         type,
-        roles: AdminRole[_]
+        roles
       }
     }
   }

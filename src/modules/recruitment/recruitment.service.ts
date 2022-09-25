@@ -7,7 +7,7 @@ import { RecruitmentStatus } from '@/enum/recruitment';
 import { AdminRole, DepartmentEnum, userRole } from '@/enum/roles';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { getManager, Repository } from 'typeorm';
+import { getManager, Like, Repository } from 'typeorm';
 import { EmailService } from '../email/email.service';
 import { UserService } from '../user/user.service';
 @Injectable()
@@ -22,28 +22,30 @@ export class RecruitmentService {
   async findOneByContent(
     content: string,
     page: number,
-    pageSize: number
+    pageSize: number,
+    status: number
   ) {
     const _u = await this.userService.findOneByContent(content)
     const where = [
-      ..._u.map((item) => ({ user: item})),
+      ..._u.map((item) => ({ user: item, status })),
       {
-        curriculumVitae: content
+        curriculumVitae: Like(`%${content}%`),
+        status
       },
       {
-        reasonsForElection: content
+        reasonsForElection: Like(`%${content}%`),
+        status
       }
     ]
     const recruitmentList = await this.recuitmentRepository.findAndCount({
       where,
       skip: (page - 1) * (pageSize),
-      take: pageSize
+      take: pageSize,
+      relations: ['user']
     })
     return Api.pagerOk({
       list: recruitmentList[0],
-      total: Math.ceil(recruitmentList[1] / pageSize),
-      page,
-      limit: pageSize,
+      total: Math.ceil(recruitmentList[1] / pageSize)
     })
   }
   // 检查当前的身份是否匹配部门
@@ -86,45 +88,112 @@ export class RecruitmentService {
   }
   // 通过部门获取所有申请表
   async getAllByDepartment(
+    content: string,
     department: DepartmentEnum,
     page: number,
     limit: number,
     status: RecruitmentStatus
   ): Promise<Result<GetRecruitmentDto>> {
+    const _u = await this.userService.findOneByContent(content)
+    const where = [
+      ..._u?.map((item) => ({
+        user: item,
+        status,
+        isDeliver: true,
+        firstChoice: department
+      })),
+      ..._u?.map((item) => ({
+        user: item,
+        status,
+        isDeliver: true,
+        secondChoice: department
+      })),
+      {
+        curriculumVitae: Like(`%${content}%`),
+        firstChoice: department,
+        status,
+        isDeliver: true
+      },
+      {
+        reasonsForElection: Like(`%${content}%`),
+        firstChoice: department,
+        status,
+        isDeliver: true
+      },
+      {
+        curriculumVitae: Like(`%${content}%`),
+        secondChoice: department,
+        status,
+        isDeliver: true
+      },
+      {
+        reasonsForElection: Like(`%${content}%`),
+        secondChoice: department,
+        status,
+        isDeliver: true
+      }
+    ]
     const offset = (+page - 1) * (+limit)
     
     const list = await this.recuitmentRepository.findAndCount({
-      where: [
-        { firstChoice: department, status, isDeliver: true },
-        { secondChoice: department, status, isDeliver: true }
-      ],
+      where,
       skip: offset,
       take: limit,
       relations: ['user']
     })
     return Api.pagerOk({
-      limit,
-      page,
       list: list[0],
       total: Math.ceil(list[1] / limit)
     })
   }
   // 获取所有申请表
   async getAll(
+    content: string,
     page: number,
     limit: number,
     status: number
   ): Promise<Result<GetRecruitmentDto>> {
+    const _u = await this.userService.findOneByContent(content)
+    const where = [
+      ..._u?.map((item) => ({
+        user: item,
+        status,
+        isDeliver: true,
+      })),
+      ..._u?.map((item) => ({
+        user: item,
+        status,
+        isDeliver: true,
+      })),
+      {
+        curriculumVitae: Like(`%${content}%`),
+        status,
+        isDeliver: true
+      },
+      {
+        reasonsForElection: Like(`%${content}%`),
+        status,
+        isDeliver: true
+      },
+      {
+        curriculumVitae: Like(`%${content}%`),
+        status,
+        isDeliver: true
+      },
+      {
+        reasonsForElection: Like(`%${content}%`),
+        status,
+        isDeliver: true
+      }
+    ]
     const offset = (+page - 1) * (+limit)
     const list = await this.recuitmentRepository.findAndCount({
-      where: { status, isDeliver: true },
+      where,
       skip: offset,
       take: limit,
       relations: ['user']
     })
     return Api.pagerOk({
-      limit,
-      page,
       list: list[0],
       total: Math.ceil(list[1] / limit)
     })
@@ -132,11 +201,17 @@ export class RecruitmentService {
   // 初审干事申请表
   async firstTrialRecruitment(user: any, id: number, status: boolean) {
     const item = await this.recuitmentRepository.findOne({
-      where: {
-        id,
-        isDeliver: true,
-        status: RecruitmentStatus.delivered
-      },
+      where: [
+        {
+          id,
+          isDeliver: true,
+          status: RecruitmentStatus.delivered
+        },{
+          id,
+          isDeliver: true,
+          status: RecruitmentStatus.firstTrialError
+        },
+      ],
       relations: ['user']
     })
     if (!item) return { code: -1, message: '未查询到此面试表' };
@@ -234,6 +309,7 @@ export class RecruitmentService {
           })
         )
       })
+      return Api.ok()
     } catch (err) {
       return { code: -3, message: err.message };
     } finally {

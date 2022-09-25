@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsNumber, IsString } from "class-validator";
-import { ApiProperty } from '@nestjs/swagger';
-import { RolesDto } from '../roles/allRoles.dto';
+import { ApiProperty, PickType } from '@nestjs/swagger';
+import { GetRolesDto, RolesDto } from '../roles/allRoles.dto';
 
 export class AllAdminUserDto {
   @IsString()
@@ -12,6 +12,11 @@ export class AllAdminUserDto {
   @IsNotEmpty()
   @ApiProperty({ description: '管理员账号', default: 'ymx' })
   username: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ description: '管理员账号', default: 'ymx' })
+  nickName: string;
 
   @IsString()
   @IsNotEmpty()
@@ -35,4 +40,16 @@ export class AllAdminUserDto {
 
   @ApiProperty({ description: '管理员权限', isArray: true })
   roles: RolesDto;
+}
+export class GetAdminUserDto extends PickType(AllAdminUserDto, [
+  'id',
+  'username',
+  'nickName',
+  'avatarUrl',
+  'email',
+  'phone',
+]) {
+  @IsNotEmpty()
+  @ApiProperty({ description: '权限' })
+  roles: GetRolesDto;
 }

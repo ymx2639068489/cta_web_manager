@@ -1,10 +1,11 @@
 import { SwaggerOk } from '@/common/decorators';
+import { NoAuth } from '@/common/decorators/Role/customize';
 import { Roles } from '@/common/decorators/Role/roles.decorator';
-import { SetGxaScoreDto, GetAllGxaDto } from '@/dto/gxa';
+import { SetGxaScoreDto, GetAllGxaDto, GetFinalsTeamList } from '@/dto/gxa';
 import { activeName } from '@/enum/active-time';
 import { AdminRole } from '@/enum/roles';
 import { Body, Controller, Get, Param, Patch, Put, Req } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ActiveTimeService } from '../active-time/active-time.service';
 import { GxaService } from './gxa.service';
 @ApiTags('gxa')
@@ -72,5 +73,15 @@ export class GxaController {
   @Roles(AdminRole.root, AdminRole.audit_gxa_admin)
   async getUnapprovedWork() {
     return await this.gxaService.getUnapprovedWork()
+  }
+
+  @NoAuth(0)
+  @ApiOperation({ description: 'public 获取决赛名单' })
+  @SwaggerOk(GetFinalsTeamList)
+  async getFinalsTeamList() {
+    if (!await this.activeTimeService.isActive(activeName.GXA_finals)) {
+      return { code: -10, message: '未到时间'}
+    }
+    return await this.gxaService.getFinalsTeamList()
   }
 }

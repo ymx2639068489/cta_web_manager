@@ -5,7 +5,7 @@ import { AdminRole } from '@/enum/roles';
 import { Injectable } from '@nestjs/common';
 import { AuthService } from '../auth/auth.service';
 import { UserService } from '../user/user.service';
-
+import { MD5 } from 'crypto-js';
 @Injectable()
 export class AdminService {
   constructor(
@@ -36,6 +36,7 @@ export class AdminService {
     if (await this.userService.findOneByUsername(createAdminDto.username)) {
       return { code: -2, message: '用户已被注册' };
     }
+    createAdminDto.password = MD5(createAdminDto.password).toString()
     try {
       await this.userService.createAdmin(createAdminDto)
       return { code: 0, message: '创建成功' };

@@ -2,6 +2,7 @@ import { AdminUser } from '@/entities/admin';
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
+import { MD5 } from 'crypto-js';
 @Injectable()
 export class AuthService {
   constructor(
@@ -13,21 +14,19 @@ export class AuthService {
   }
   async validateAdmin(username: string, pass: string): Promise<any> {
     const user = await this.userService.findOneByUsername(username);
-    if (user && user.password === pass) {
+    if (user && user.password === MD5(pass).toString()) {
       const result = {
         id: user.id,
         type: false,
       };
       return result;
     }
-    console.log('nullsss');
-    
     return null;
   }
 
   async validateUser(username: string, pass: string): Promise<any> {
     const user = await this.userService.findOneByUsernameUser(username);
-    if (user && user.password === pass) {
+    if (user && user.password === MD5(pass).toString()) {
       const result = {
         id: user.id,
         type: true,

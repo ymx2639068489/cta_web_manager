@@ -176,5 +176,7 @@ export class GxaService {
       rejected: list.filter(item => item.isApproved === false)
     })
   }
-
+  // 获取决赛名单
+  async getFinalsTeamList() {
+  }
 }

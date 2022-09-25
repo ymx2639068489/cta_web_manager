@@ -7,3 +7,7 @@ export class GetRouterDto extends PickType(AllRouterDto, [
   @ApiProperty({ isArray: true, description: '子路由' })
   children: GetRouterDto;
 }
+export class GetRouterNoChildrenDto extends PickType(AllRouterDto, [
+  'name',
+  'title'
+]) {}

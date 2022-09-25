@@ -1,6 +1,7 @@
 import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { BaseEntity } from '../base.entity';
 import { User } from '../admin';
+import { PickType } from '@nestjs/swagger';
 
 @Entity('GxaApplicationForm')
 export class GxaApplicationForm extends BaseEntity {

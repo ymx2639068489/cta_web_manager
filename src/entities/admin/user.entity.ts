@@ -63,6 +63,7 @@ export class User extends BaseEntity {
   // 手机号
   @Column({
     comment: 'phoneNumber',
+    nullable: true
   })
   phoneNumber: string;
   // 手机号

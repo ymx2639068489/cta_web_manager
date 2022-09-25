@@ -1,10 +1,10 @@
 import { NoAuth } from '@/common/decorators/Role/customize';
 import { warpResponse } from '@/common/interceptors';
 import { Result } from '@/common/interface/result';
-import { AdminUserLoginDto, AllAdminUserDto, CreateAdminDto, GetInfo, UpdateAdminSelfInfoDto } from '@/dto/admin-user';
+import { AdminUserLoginDto, AllAdminUserDto, CreateAdminDto, GetAdminUserDto, GetInfo, UpdateAdminSelfInfoDto } from '@/dto/admin-user';
 import { Roles } from '@/common/decorators/Role/roles.decorator';
 import { AdminRole } from '@/enum/roles';
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req, Type } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from '../auth/auth.service';
 import { AdminService } from './admin.service';
@@ -22,7 +22,7 @@ export class AdminController {
 
   // 用户登录
   @NoAuth(0)
-  @SwaggerOk()
+  @SwaggerOk(String)
   @Post('login')
   @ApiOperation({ description: '管理员登录' })
   async login(
@@ -35,6 +35,8 @@ export class AdminController {
   @SwaggerOk(GetInfo)
   @ApiOperation({ description: '获取用户信息' })
   async getInfo(@Req() { user }: any): Promise<Result<GetInfo>> {
+    console.log(user);
+    
     return { code: 0, message: '', data: user }
   }
 
@@ -64,7 +66,7 @@ export class AdminController {
   @ApiQuery({ name: 'username', required: false })
   @ApiOperation({ description: '获取所有管理员' })
   @ApiQuery({ name: 'roles', isArray: true, description: '角色id' })
-  @SwaggerPagerOk(AllAdminUserDto)
+  @SwaggerPagerOk(GetAdminUserDto)
   async getAllAdmin(
     @Query('page') page: string,
     @Query('pageSize') pageSize: string,

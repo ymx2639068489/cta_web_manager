@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post, Put, Query, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JournalismService } from './journalism.service';
-import { AllJournalismDto, CreateJournalismDto, UpdateJournalismDto } from '@/dto/journalism';
+import { AllJournalismDto, CreateJournalismDto, GetJournalismDto, UpdateJournalismDto } from '@/dto/journalism';
 import { SwaggerOk, SwaggerPagerOk } from '@/common/decorators';
 import { Result } from '@/common/interface/result';
 import { Roles } from '@/common/decorators/Role/roles.decorator';
@@ -19,13 +19,13 @@ export class JournalismController {
   @ApiQuery({ name: 'page' })
   @ApiQuery({ name: 'pageSize' })
   @ApiQuery({ name: 'content', required: false })
-  @SwaggerPagerOk(AllJournalismDto)
+  @SwaggerPagerOk(GetJournalismDto)
   async findAll(
     @Req() { user }: any,
     @Query('page') page: string,
     @Query('pageSize') pageSize: string,
     @Query('content') content: string
-  ): Promise<Result<AllJournalismDto>> {
+  ): Promise<Result<GetJournalismDto>> {
     if (+pageSize === 0 || +page === 0) {
       return { code: -1, message: 'page or pageSize is not zero' };
     }

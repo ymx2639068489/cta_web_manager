@@ -1,6 +1,6 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, PickType } from "@nestjs/swagger";
 import { IsBIC, IsBoolean, IsNotEmpty, IsNumber, IsString } from "class-validator";
-import { GetInfo } from "../admin-user";
+import { AllAdminUserDto, GetInfo } from "../admin-user";
 
 
 export class AllJournalismDto {
@@ -32,4 +32,22 @@ export class AllJournalismDto {
   @IsNotEmpty()
   @ApiProperty({ description: '是否审核通过' })
   reasonsForRefusal: string;
+}
+class AuthorDto extends PickType(AllAdminUserDto, [
+  'id',
+  'username',
+  'nickName',
+  'avatarUrl',
+  'email',
+  'phone',
+]) {}
+export class GetJournalismDto extends PickType(AllJournalismDto, [
+  'id',
+  'title',
+  'content',
+  'isApprove',
+  'reasonsForRefusal'
+]) {
+  @ApiProperty({ description: '作者' })
+  author: AuthorDto;
 }

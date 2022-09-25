@@ -2,6 +2,8 @@ import { SwaggerOk, SwaggerPagerOk } from '@/common/decorators';
 import { Roles } from '@/common/decorators/Role/roles.decorator';
 import { warpResponse } from '@/common/interceptors';
 import { Result } from '@/common/interface/result';
+import { Api } from '@/common/utils/api';
+import { API_CODES } from '@/const/api.const';
 import { GetRecruitmentDto } from '@/dto/recruitment';
 import { activeName } from '@/enum/active-time';
 import { RecruitmentStatus } from '@/enum/recruitment';
@@ -28,8 +30,44 @@ export class RecruitmentController {
 
   @Get('getAllDepartment')
   @ApiOperation({ description: '获取所有的部门' })
-  @ApiResponse({ type: warpResponse({ type: '' }) })
-  @SwaggerPagerOk(GetRecruitmentDto)
+  @ApiResponse({
+    schema: {
+      allOf: [
+        {
+          properties: {
+            code: {
+              type: 'Number',
+              default: 0
+            }
+          }
+        },
+        {
+          properties: {
+            message: {
+              type: 'String',
+              default: '成功'
+            }
+          }
+        },
+        {
+          properties: {
+            data: {
+              allOf: [
+                {
+                  properties: {
+                    departmentName: {
+                      type: 'String',
+                      default: '秘书处'
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  })
   getAllDepartment() {
     return { data: DepartmentEnum, code: 0, message: '获取成功' };
   }
@@ -41,6 +79,7 @@ export class RecruitmentController {
   @ApiQuery({ name: 'page', description: '页数' })
   @ApiQuery({ name: 'pageSize', description: '页面大小' })
   @ApiQuery({ name: 'status', enum: RecruitmentStatus })
+  @ApiQuery({ name: 'content', required: false })
   @SwaggerPagerOk(GetRecruitmentDto)
   async getRecruitment(
     @Req() { user }: any,
@@ -48,6 +87,7 @@ export class RecruitmentController {
     @Query('page') page: string,
     @Query('pageSize') pageSize: string,
     @Query('status') status: string,
+    @Query('content') content: string
   ): Promise<Result<GetRecruitmentDto>> {
 
     // 检查现在是不是可以审核申请表了
@@ -60,14 +100,19 @@ export class RecruitmentController {
       code: -1, message: '权限不够'
     }
     if (department) {
+      console.log('111');
       return await this.recruitmentService.getAllByDepartment(
+        content,
         department,
         +page,
         +pageSize,
         RecruitmentStatus[status]
       )
     } else {
+      console.log('222');
+      
       return await this.recruitmentService.getAll(
+        content,
         +page,
         +pageSize,
         RecruitmentStatus[status]
@@ -111,23 +156,26 @@ export class RecruitmentController {
     return await this.recruitmentService.setOfficial(+id, department)
   }
 
-  @Get('findOne')
-  @ApiQuery({ name: 'content' })
-  @ApiQuery({ name: 'page' })
-  @ApiQuery({ name: 'pageSize' })
-  @ApiOperation({ description: '查询干事申请表' })
-  @SwaggerOk()
-  async findOne(
-    @Query('content') content: string,
-    @Query('page') page: string,
-    @Query('pageSize') pageSize: string,
-  ) {
-    return this.recruitmentService.findOneByContent(
-      content,
-      +page,
-      +pageSize
-    )
-  }
+  // @Get('findOne')
+  // @ApiQuery({ name: 'content' })
+  // @ApiQuery({ name: 'page' })
+  // @ApiQuery({ name: 'pageSize' })
+  // @ApiOperation({ description: '查询干事申请表' })
+  // @ApiQuery({ name: 'status', enum: RecruitmentStatus })
+  // @SwaggerPagerOk(GetRecruitmentDto)
+  // async findOne(
+  //   @Query('content') content: string,
+  //   @Query('page') page: string,
+  //   @Query('pageSize') pageSize: string,
+  //   @Query('status') status: string,
+  // ) {
+  //   return this.recruitmentService.findOneByContent(
+  //     content,
+  //     +page,
+  //     +pageSize,
+  //     RecruitmentStatus[status]
+  //   )
+  // }
 
   @Roles(AdminRole.root)
   @Get('finallySendOffer')
@@ -141,4 +189,10 @@ export class RecruitmentController {
     return await this.recruitmentService.setOfficialFinally(+id)
   }
 
+  @Get('getStatus')
+  @ApiOperation({ description: '获取申请表状态列表' })
+  @SwaggerOk()
+  getStatus() {
+    return Api.ok(RecruitmentStatus)
+  }
 }

@@ -1,5 +1,5 @@
 import { IsNotEmpty, IsNumber, IsString } from "class-validator";
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, PickType } from '@nestjs/swagger';
 import { AllRouterDto } from "../routers";
 export class RolesDto {
   @IsNumber()
@@ -20,3 +20,9 @@ export class RolesDto {
   @ApiProperty({ description: '路由', isArray: true })
   routers: AllRouterDto;
 }
+
+export class GetRolesDto extends PickType(RolesDto, [
+  'id',
+  'roleName',
+  'roleDescription'
+]) {}

@@ -1,5 +1,5 @@
-import { SwaggerOk } from '@/common/decorators';
-import { CreateBannerDto, UpdateBannerDto } from '@/dto/banner';
+import { SwaggerOk, SwaggerPagerOk } from '@/common/decorators';
+import { AllBannerDto, CreateBannerDto, UpdateBannerDto } from '@/dto/banner';
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { BannerService } from './banner.service';
@@ -14,7 +14,7 @@ export class BannerController {
 
   @Get()
   @ApiOperation({ description: '获取所有轮播图, rank为-1表示不显示，否则按照升序排序' })
-  @SwaggerOk()
+  @SwaggerPagerOk(AllBannerDto)
   async findAll() {
     return await this.bannerService.findAll()
   }
