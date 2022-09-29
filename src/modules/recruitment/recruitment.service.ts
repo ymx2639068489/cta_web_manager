@@ -37,15 +37,15 @@ export class RecruitmentService {
         status
       }
     ]
-    const recruitmentList = await this.recuitmentRepository.findAndCount({
+    const [list, total] = await this.recuitmentRepository.findAndCount({
       where,
       skip: (page - 1) * (pageSize),
       take: pageSize,
       relations: ['user']
     })
     return Api.pagerOk({
-      list: recruitmentList[0],
-      total: Math.ceil(recruitmentList[1] / pageSize)
+      list,
+      total
     })
   }
   // 检查当前的身份是否匹配部门
@@ -83,6 +83,7 @@ export class RecruitmentService {
       if (!([item.firstChoice, item.secondChoice].includes(user.identity.department))) {
         return false
       }
+      if (user.identity.department === '理事会') return true
     }
     return true
   }
@@ -94,20 +95,10 @@ export class RecruitmentService {
     limit: number,
     status: RecruitmentStatus
   ): Promise<Result<GetRecruitmentDto>> {
-    const _u = await this.userService.findOneByContent(content)
-    const where = [
-      ..._u?.map((item) => ({
-        user: item,
-        status,
-        isDeliver: true,
-        firstChoice: department
-      })),
-      ..._u?.map((item) => ({
-        user: item,
-        status,
-        isDeliver: true,
-        secondChoice: department
-      })),
+    let _u: User[]
+    if (content) _u = await this.userService.findOneByContent(content)
+    else content = ""
+    const where: any = [
       {
         curriculumVitae: Like(`%${content}%`),
         firstChoice: department,
@@ -133,17 +124,33 @@ export class RecruitmentService {
         isDeliver: true
       }
     ]
+    if (content && _u) {
+      where.push(
+        ..._u?.map((item) => ({
+          user: item,
+          status,
+          isDeliver: true,
+          firstChoice: department
+        })),
+        ..._u?.map((item) => ({
+          user: item,
+          status,
+          isDeliver: true,
+          secondChoice: department
+        }))
+      )
+    }
     const offset = (+page - 1) * (+limit)
     
-    const list = await this.recuitmentRepository.findAndCount({
+    const [list, total] = await this.recuitmentRepository.findAndCount({
       where,
       skip: offset,
       take: limit,
       relations: ['user']
     })
     return Api.pagerOk({
-      list: list[0],
-      total: Math.ceil(list[1] / limit)
+      list,
+      total
     })
   }
   // 获取所有申请表
@@ -153,18 +160,10 @@ export class RecruitmentService {
     limit: number,
     status: number
   ): Promise<Result<GetRecruitmentDto>> {
-    const _u = await this.userService.findOneByContent(content)
-    const where = [
-      ..._u?.map((item) => ({
-        user: item,
-        status,
-        isDeliver: true,
-      })),
-      ..._u?.map((item) => ({
-        user: item,
-        status,
-        isDeliver: true,
-      })),
+    let _u: User[]
+    if (content) _u = await this.userService.findOneByContent(content)
+    else content = ""
+    const where: any = [
       {
         curriculumVitae: Like(`%${content}%`),
         status,
@@ -186,16 +185,32 @@ export class RecruitmentService {
         isDeliver: true
       }
     ]
+    if (content && _u) {
+      where.push(
+        ..._u?.map((item) => ({
+          user: item,
+          status,
+          isDeliver: true,
+        })),
+        ..._u?.map((item) => ({
+          user: item,
+          status,
+          isDeliver: true,
+        }))
+      )
+    }
+    
     const offset = (+page - 1) * (+limit)
-    const list = await this.recuitmentRepository.findAndCount({
+    const [list, total] = await this.recuitmentRepository.findAndCount({
       where,
       skip: offset,
       take: limit,
       relations: ['user']
     })
+    
     return Api.pagerOk({
-      list: list[0],
-      total: Math.ceil(list[1] / limit)
+      list,
+      total
     })
   }
   // 初审干事申请表
@@ -210,7 +225,7 @@ export class RecruitmentService {
           id,
           isDeliver: true,
           status: RecruitmentStatus.firstTrialError
-        },
+        }
       ],
       relations: ['user']
     })
@@ -253,9 +268,27 @@ export class RecruitmentService {
   }
   
   // 设置干事, 在线上面试完后, 部长初审
-  async setOfficial(id: number, department: DepartmentEnum) {
+  async setOfficial(id: number, department: DepartmentEnum, status: boolean) {
     const item = await this.findOne(id);
     if (!item) return { code: -2, message: 'recruitment is not found' }
+
+    if (item.status === RecruitmentStatus.FinallyAccepted) return Api.err(-9, '对方已被录取')
+
+    if (!status) {
+      if (item.status === RecruitmentStatus.Rejected) return Api.err(-8, '已经被拒绝了，请勿重复操作')
+      try {
+        await this.recuitmentRepository.save(
+          await this.recuitmentRepository.preload({
+            ...item,
+            status: RecruitmentStatus.Rejected
+          })
+        )
+        return Api.ok()
+      } catch (err) {
+        return Api.err(-3, err.message)
+      }
+    }
+
     if (item.status === RecruitmentStatus.Accepted) {
       return { code: -4, message: '重复录取' }
     }

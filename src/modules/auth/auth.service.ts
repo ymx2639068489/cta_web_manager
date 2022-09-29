@@ -15,11 +15,10 @@ export class AuthService {
   async validateAdmin(username: string, pass: string): Promise<any> {
     const user = await this.userService.findOneByUsername(username);
     if (user && user.password === MD5(pass).toString()) {
-      const result = {
+      return {
         id: user.id,
         type: false,
       };
-      return result;
     }
     return null;
   }
@@ -27,11 +26,10 @@ export class AuthService {
   async validateUser(username: string, pass: string): Promise<any> {
     const user = await this.userService.findOneByUsernameUser(username);
     if (user && user.password === MD5(pass).toString()) {
-      const result = {
+      return {
         id: user.id,
         type: true,
-      }
-      return result;
+      };
     }
     return null;
   }

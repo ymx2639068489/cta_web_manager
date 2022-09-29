@@ -140,20 +140,23 @@ export class RecruitmentController {
     return await this.recruitmentService.firstTrialRecruitment(user, +id, status);
   }
 
-  @Patch('setOfficial/:id/:department')
+  @Patch('setOfficial/:id/:department/:status')
   @Roles(..._roles)
   @ApiOperation({ description: '设置干事' })
   @ApiParam({ name: 'id', description: '申请表id' })
   @ApiParam({ name: 'department', enum: DepartmentEnum })
+  @ApiParam({ name: 'status', description: 'status = true -> 预录取, false=> 拒绝' })
   @SwaggerOk()
   async setOfficial(
     @Param('department') department: DepartmentEnum,
     @Param('id') id: string,
+    @Param('status') status: boolean
   ) {
     if (!await this.activeTimeService.isActive(activeName.set_official)) {
       return { code: -10, message: '活动时间未到' }
     }
-    return await this.recruitmentService.setOfficial(+id, department)
+
+    return await this.recruitmentService.setOfficial(+id, department, status)
   }
 
   // @Get('findOne')

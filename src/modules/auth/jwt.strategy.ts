@@ -19,26 +19,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: any) {
     const { id, type } = payload;
-    if (!type) {
-      return {
-        ...await this.userService.findOneAdmin(id),
-        type,
-      }
-    } else {
+    if (!type) return { ...await this.userService.findOneAdmin(id), type, }
+    else {
       const user = await this.userService.findOneUser(id)
-      if (user.identity.id === 20) {
-        throw new UnauthorizedException()
-      }
-      let _: any
+      if (user.identity.id === 20) throw new UnauthorizedException()
+      let identityId: number
       if ([
         userRole.LSH_CWFHZ,
         userRole.LSH_HZ,
         userRole.LSH_JSFHZ,
         userRole.LSH_ZGFZR
-      ].includes(user.identity.id)) _ = AdminRole.president
-      else if (userAdminRole.includes(user.identity.id)) _ = AdminRole.minister
-      else _ = AdminRole.official
-      const roles = await this.userService.getRolesById(_)
+      ].includes(user.identity.id)) identityId = AdminRole.president
+      else if (userAdminRole.includes(user.identity.id)) identityId = AdminRole.minister
+      else identityId = AdminRole.official
+      const roles = await this.userService.getRolesById(identityId)
       return {
         ...user,
         type,

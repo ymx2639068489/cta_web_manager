@@ -25,8 +25,8 @@ import {
 import { SwaggerOk, SwaggerPagerOk } from '@/common/decorators';
 import { NoAuth } from '@/common/decorators/Role/customize';
 @ApiBearerAuth()
-@ApiTags('previous-winners')
-@Controller('previous-winners')
+@ApiTags('previous_winners')
+@Controller('previous_winners')
 export class PreviousWinnersController {
   constructor(
     private readonly previousService: PreviousWinnersService

@@ -1,6 +1,6 @@
 import { ApiProperty, PickType } from "@nestjs/swagger";
 import { IsNotEmpty, IsNumber, IsString } from "class-validator";
-import { AllUserDto, CreateUserIdentityDto, UserDto } from "../users";
+import { AllUserDto, CreateUserIdentityDto } from "../users";
 class identityDto extends CreateUserIdentityDto {
   @IsNotEmpty()
   @ApiProperty({ description: 'id' })

@@ -5,7 +5,7 @@ import { journalism } from '@/entities/journalism';
 import { AdminRole } from '@/enum/roles';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { UserService } from '../user/user.service';
 
 @Injectable()
@@ -31,13 +31,16 @@ export class JournalismService {
     pageSize: number,
     content: string,
   ): Promise<Result<GetJournalismDto>> {
-    let where: any;
+    let where: any = {};
     // 如果是root就把所有的返回给他
     // 不对作者筛选就可以返回所有的
-    if (user.roles.id !== AdminRole.root) where = { author: user }
-    if (content) where = { ...where, content }
+    if (
+      user.roles.id !== AdminRole.root &&
+      user.roles.id !== AdminRole.audit_journalism_admin
+    ) where = { author: user }
+    if (content) where = { ...where, content: Like(`%${content}%`) }
     
-    let [list, total] = await this.journalismRepository.findAndCount({
+    const [list, total] = await this.journalismRepository.findAndCount({
       where,
       relations: ['author'],
       skip: (page - 1) * pageSize,
@@ -73,10 +76,12 @@ export class JournalismService {
     if (!journalismItem) return { code: -1, message: `not found` }
     if (journalismItem.isApprove) return { code: -3, message: '已发布，请联系上级管理员进行打回' }
     try {
+      const { content , title } = updateJournalismDto
       await this.journalismRepository.save(
         await this.journalismRepository.preload({
           ...journalismItem,
-          ...updateJournalismDto
+          content,
+          title
         })
       )
       return Api.ok('更新成功')

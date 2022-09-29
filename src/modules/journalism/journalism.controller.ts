@@ -76,7 +76,7 @@ export class JournalismController {
     )) {
       return { code: -3, message: 'You are not the owner of this journalism!' }
     }
-    return this.journalismService.updateJournalism(updateJournalismDto)
+    return await this.journalismService.updateJournalism(updateJournalismDto)
   }
 
   @Roles(AdminRole.root)

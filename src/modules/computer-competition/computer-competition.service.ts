@@ -33,7 +33,7 @@ export class ComputerCompetitionService {
       })
     }
     return Api.pagerOk({
-      total: Math.ceil(total / pageSize),
+      total,
       list,
     })
   }

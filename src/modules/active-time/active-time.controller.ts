@@ -1,8 +1,7 @@
 import { SwaggerOk, SwaggerPagerOk } from '@/common/decorators';
 import { Roles } from '@/common/decorators/Role/roles.decorator';
-import { activeName } from '@/enum/active-time';
 import { AdminRole } from '@/enum/roles';
-import { Controller, Get, Param, Patch, Put } from '@nestjs/common';
+import { Controller, Get, Param, Patch } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ActiveTimeService } from './active-time.service';
 import { ActiveTimeDto } from '@/dto/active-time';

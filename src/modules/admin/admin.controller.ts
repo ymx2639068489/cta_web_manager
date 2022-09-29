@@ -1,18 +1,40 @@
+import {
+  AdminUserLoginDto,
+  AllAdminUserDto,
+  CreateAdminDto,
+  GetAdminUserDto,
+  GetInfo,
+  UpdateAdminSelfInfoDto
+} from '@/dto/admin-user';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+  Req
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiTags
+} from '@nestjs/swagger';
 import { NoAuth } from '@/common/decorators/Role/customize';
-import { warpResponse } from '@/common/interceptors';
 import { Result } from '@/common/interface/result';
-import { AdminUserLoginDto, AllAdminUserDto, CreateAdminDto, GetAdminUserDto, GetInfo, UpdateAdminSelfInfoDto } from '@/dto/admin-user';
 import { Roles } from '@/common/decorators/Role/roles.decorator';
 import { AdminRole } from '@/enum/roles';
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req, Type } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { AuthService } from '../auth/auth.service';
 import { AdminService } from './admin.service';
 import { UserService } from '../user/user.service';
 import { SwaggerOk, SwaggerPagerOk } from '@/common/decorators/swagger.decorator';
 import { SetAdminPasswordDto } from '@/dto/admin-user'
 @ApiBearerAuth()
-@ApiTags('admin-user')
+@ApiTags('admin_user')
 @Controller('admin')
 export class AdminController {
   constructor(
@@ -35,8 +57,6 @@ export class AdminController {
   @SwaggerOk(GetInfo)
   @ApiOperation({ description: '获取用户信息' })
   async getInfo(@Req() { user }: any): Promise<Result<GetInfo>> {
-    console.log(user);
-    
     return { code: 0, message: '', data: user }
   }
 

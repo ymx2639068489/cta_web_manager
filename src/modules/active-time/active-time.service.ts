@@ -35,14 +35,14 @@ export class ActiveTimeService {
       )
       return Api.ok()
     } catch (err) {
-      return { code: -2, message: err.message }
+      return Api.err(-2, err.message)
     }
   }
   async setEndTime(activeName: string, date: number) {
     const item = await this.activeTimeRepository.findOne({
       where: { activeName }
     })
-    if (!item) return { code: -1, message: 'active is not found' }
+    if (!item) return Api.err(-1, 'active is not found')
     try {
       await this.activeTimeRepository.save(
         await this.activeTimeRepository.preload({
@@ -52,7 +52,7 @@ export class ActiveTimeService {
       )
       return Api.ok()
     } catch (err) {
-      return { code: -2, message: err.message }
+      return Api.err(-2, err.message)
     }
   }
   // 获取所有活动

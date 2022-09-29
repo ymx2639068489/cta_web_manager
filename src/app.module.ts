@@ -23,6 +23,7 @@ import { TasksModule } from './modules/tasks/tasks.module';
 import { ReplacementModule } from './modules/replacement/replacement.module';
 import { ComputerCompetitionModule } from './modules/computer-competition/computer-competition.module';
 import { PreviousWinnersModule } from './modules/previous-winners/previous-winners.module';
+// console.log(process.env.DATABASE_HOST);
 
 @Module({
   imports: [

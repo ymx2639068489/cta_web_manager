@@ -7,6 +7,7 @@ import { AdminRole, cadresRole, DepartmentEnum, userAdminRole, userRole } from '
 import { Api } from '@/common/utils/api';
 import { Result } from '@/common/interface/result';
 import { MD5 } from 'crypto-js';
+import { SetUserInfo } from '@/dto/users';
 @Injectable()
 export class UserService {
   constructor(
@@ -19,6 +20,20 @@ export class UserService {
     @InjectRepository(UserIdentity)
     private readonly userIdentityRepository: Repository<UserIdentity>,
   ) {}
+
+  async setUserPassword(setUserInfo: SetUserInfo) {
+    const user = await this.findOneUser(setUserInfo.id)
+    if (!user) return Api.err(-1, 'user is not found')
+    try {
+      await this.userRepository.save({
+        ...user,
+        password: MD5(setUserInfo.password).toString()
+      })
+      return Api.ok()
+    } catch (err) {
+      return Api.err(-1, err.message)
+    }
+  }
 
   // 查询干事+干部
   async getOfficial() {
@@ -49,26 +64,43 @@ export class UserService {
     return Api.ok(data)
   }
   // 查询用户
-  async findAllUser(page: number, pageSize: number, username: string) {
+  async findAllUser(page: number, pageSize: number, content: string) {
     let list: User[], total: number
-    if (username) {
+    if (content) {
       [list, total] = await this.userRepository.findAndCount({
-        where: { username },
+        where: [
+          { username: Like(`%${content}%`) },
+          { studentId: Like(`%${content}%`) }
+        ],
         relations: ['identity'],
         skip: (page - 1) * pageSize,
+        take: pageSize
       })
     } else {
       [list, total] = await this.userRepository.findAndCount({
         relations: ['identity'],
         skip: (page - 1) * pageSize,
+        take: pageSize
       })
     }
     return Api.pagerOk({
-      total: Math.ceil(total / pageSize),
+      total,
       list
     })
   }
 
+  // 删除用户
+  async deleteUserItem(id: number) {
+    const item = await this.userRepository.findOne({
+      where: { id }
+    })
+    if (!item) return Api.err(-1, 'user is not founf')
+    try {
+      await this.userRepository.softRemove(item)
+    } catch (err) {
+      return Api.err(-1, err.message)
+    }
+  }
   async getUserIdentityByRole(role: string) {
     return await this.userIdentityRepository.findOne({
       where: { id: cadresRole[role] }
@@ -199,7 +231,7 @@ export class UserService {
       if (username) where.push({ roles: _roles, username: Like(`%${username}%`) })
       else where.push({ roles: _roles })
     
-    const list = await this.adminUserRepository.findAndCount({
+      const [list, total] = await this.adminUserRepository.findAndCount({
       where,
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -207,10 +239,12 @@ export class UserService {
     })
 
     return Api.pagerOk({
-      list: list[0],
-      total: Math.ceil(list[1] / pageSize)
+      list,
+      total
     })
   }
+  // 通过内容查询用户
+  // findAllByContent
   // 修改对应管理员的密码
   async setAdminPassword(setAdminPasswordDto: SetAdminPasswordDto): Promise<Result<string>> {
     const admin = await this.adminUserRepository.findOne({

@@ -1,6 +1,9 @@
-# compiled output
+.DS_Store
+node_modules
 /dist
-/node_modules
+.env
+/GXA_WORKS
+/static
 
 # Logs
 logs

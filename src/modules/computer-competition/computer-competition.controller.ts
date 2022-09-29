@@ -10,8 +10,8 @@ import { ComputerCompetitionService } from './computer-competition.service';
  * 4. 增加一个题目
  */
 @ApiBearerAuth()
-@ApiTags('computerCompetition')
-@Controller('computer-competition')
+@ApiTags('computer_competition')
+@Controller('computer_competition')
 export class ComputerCompetitionController {
   constructor(
     private readonly computerService: ComputerCompetitionService,
