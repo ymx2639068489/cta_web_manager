@@ -14,9 +14,23 @@ export class ReplacementService {
   ) {}
   // 点击结束换届，把当前届的所有干部入库
   async termEnd() {
+    const identity = await this.userService.getUserIdentityById(20)
     await getManager().transaction(async manager => {
-      const identity = await this.userService.getUserIdentityById(20)
-      await Promise.all((await this.userService.findAllOfficial()).map(async item => {
+      await Promise.all((await this.userService.findAllCadres()).map(async item => {
+        const _item = new Replacement()
+        _item.session = new Date().getFullYear() + 1
+        
+        for (let key of ['college', 'class', 'username', 'major', 'qq', 'studentId', ]) {
+          _item[key] = item[key]
+        }
+        _item.identity = `${item.identity.department}_${item.identity.duty}`
+        // 记录往届干部
+        
+        await manager.save(
+          Replacement,
+          this.replacementRepository.create(_item)
+        )
+        // 然后更改用户的身份，改为会员
         await manager.save(
           User,
           await this.userService.updateUserIdentityToManager({
@@ -25,19 +39,7 @@ export class ReplacementService {
           })
         )
       }))
-      await Promise.all((await this.userService.findAllCadres()).map(async item => {
-        const _item = new Replacement()
-        _item.session = new Date().getFullYear() + 1
-        for (let key of ['college', 'class', 'username', 'major', 'qq', 'studentId', ]) {
-          _item[key] = item[key]
-        }
-        _item.identity = `${item.identity.department}_${item.identity.duty}`
-        // 记录往届干部
-        await manager.save(
-          Replacement,
-          this.replacementRepository.create(_item)
-        )
-        // 然后更改用户的身份，改为会员
+      await Promise.all((await this.userService.findAllOfficial()).map(async item => {
         await manager.save(
           User,
           await this.userService.updateUserIdentityToManager({

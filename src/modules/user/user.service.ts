@@ -145,7 +145,8 @@ export class UserService {
         'major',
         'class',
         'avatarUrl',
-        'identity'
+        'identity',
+        'qq'
       ],
       where: userAdminRole.map((item: number) => ({ identity: item })),
       relations: ['identity']
@@ -154,13 +155,14 @@ export class UserService {
   // 获取当前所有干事
   async findAllOfficial() {
     return await this.userRepository.find({
-      where: { identity: [
+      where:  [
         userRole.JSB_GS,
         userRole.MSC_GS,
         userRole.ZXB_GS,
         userRole.XMB_GS,
-        userRole.SFB_GS
-      ].map(item => ({ identity: item }))}
+        userRole.SFB_GS 
+      ].map(item => ({ identity: item })),
+      relations: ['identity']
     })
   }
   // 通过id查询用户

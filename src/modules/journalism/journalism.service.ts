@@ -17,7 +17,10 @@ export class JournalismService {
   ) {}
 
   private async findOneById(id: number): Promise<journalism> {
-    return await this.journalismRepository.findOne({ where: { id }})
+    return await this.journalismRepository.findOne({
+      where: { id },
+      relations: ['author']
+    })
   }
   // 判断当前新闻作者是否是当前用户
   async checkAuthor(id: number, user: any) {

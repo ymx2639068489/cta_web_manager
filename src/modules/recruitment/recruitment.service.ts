@@ -80,9 +80,10 @@ export class RecruitmentService {
       }
     } else {
       // 如果当前用户的部门与这份申请表的志愿对应不上
-      if (!([item.firstChoice, item.secondChoice].includes(user.identity.department))) {
-        return false
+      if ([item.firstChoice, item.secondChoice].includes(user.identity.department)) {
+        return true
       }
+      
       if (user.identity.department === '理事会') return true
     }
     return true
