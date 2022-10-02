@@ -10,5 +10,6 @@ export enum activeName {
   GXA_end = 'GXA_end',
   GXA_finals = 'GXA_finals',
   computer_knowledge_competition = 'computer_knowledge_competition',
-  newborn_algorithm_competition = 'newborn_algorithm_competition'
+  newborn_algorithm_competition = 'newborn_algorithm_competition',
+  replacement = 'replacement'
 }

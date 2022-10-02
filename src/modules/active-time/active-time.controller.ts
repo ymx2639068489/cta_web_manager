@@ -5,6 +5,9 @@ import { Controller, Get, Param, Patch } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ActiveTimeService } from './active-time.service';
 import { ActiveTimeDto } from '@/dto/active-time';
+import { NoAuth } from '@/common/decorators/Role/customize';
+import { Api } from '@/common/utils/api';
+import { activeName } from '@/enum/active-time';
 
 @ApiBearerAuth()
 @ApiTags('active-time')
@@ -12,8 +15,8 @@ import { ActiveTimeDto } from '@/dto/active-time';
 export class ActiveTimeController {
   constructor(
     private readonly activeTimeService: ActiveTimeService
-  ) {}
-  
+  ) { }
+
   @Get('getAllActiveList')
   @Roles(AdminRole.root)
   @ApiOperation({ description: '获取所有活动列表' })
@@ -47,4 +50,13 @@ export class ActiveTimeController {
   ) {
     return await this.activeTimeService.setEndTime(activeName, date)
   }
+
+  @Get('get/:activeName')
+  @ApiOperation({ description: '获取指定活动是否已经开始' })
+  @SwaggerOk(Boolean)
+  @NoAuth(0)
+  async isActive(@Param('activeName') activeName: activeName) {
+    return Api.ok(await this.activeTimeService.isActive(activeName))
+  }
+
 }
