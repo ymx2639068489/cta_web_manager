@@ -19,7 +19,7 @@ export class UserService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(UserIdentity)
     private readonly userIdentityRepository: Repository<UserIdentity>,
-  ) {}
+  ) { }
 
   async setUserPassword(setUserInfo: SetUserInfo) {
     const user = await this.findOneUser(setUserInfo.id)
@@ -42,24 +42,37 @@ export class UserService {
       relations: ['identity']
     })
     const data = {
-      '理事会': { '会长': null, '技术副会长': null, '常务副会长': null, },
-      '秘书处': { '秘书长': null, '副秘书': [], '干事': [], },
-      '组织宣传部': { '部长': null, '副部长': [], '干事': [], },
-      '技术服务部': { '部长': null, '副部长': [], '干事': [], },
-      '项目实践部': { '部长': null, '副部长': [], '干事': [], },
-      '算法竞赛部': { '部长': null, '副部长': [], '干事': [], },
+      '理事会': { '会长': [], '技术副会长': [], '常务副会长': [], },
+      '秘书处': { '秘书长': [], '副秘书': [], '干事': [], },
+      '组宣部': { '部长': [], '副部长': [], '干事': [], },
+      '技术部': { '部长': [], '副部长': [], '干事': [], },
+      '项目部': { '部长': [], '副部长': [], '干事': [], },
+      '算法部': { '部长': [], '副部长': [], '干事': [], },
     }
     list.forEach(item => {
       const { department, duty } = item.identity
       delete item.identity
-      console.log(department, duty);
-      
-      if (
-        department === '理事会' ||
-        duty === '部长' ||
-        duty === '秘书长'
-      ) data[department][duty] = item
-      else data[department][duty].push(item)
+      switch (department) {
+        case '技术服务部': {
+          data['技术部'][duty].push(item)
+          break
+        }
+        case '项目实践部': {
+          data['项目部'][duty].push(item)
+          break
+        }
+        case '算法竞赛部': {
+          data['算法部'][duty].push(item)
+          break
+        }
+        case '组织宣传部': {
+          data['组宣部'][duty].push(item)
+          break
+        }
+        default: {
+          data[department][duty].push(item)
+        }
+      }
     })
     return Api.ok(data)
   }
@@ -155,12 +168,12 @@ export class UserService {
   // 获取当前所有干事
   async findAllOfficial() {
     return await this.userRepository.find({
-      where:  [
+      where: [
         userRole.JSB_GS,
         userRole.MSC_GS,
         userRole.ZXB_GS,
         userRole.XMB_GS,
-        userRole.SFB_GS 
+        userRole.SFB_GS
       ].map(item => ({ identity: item })),
       relations: ['identity']
     })
@@ -222,7 +235,7 @@ export class UserService {
     _roles: AdminRole[] | AdminRole,
     username: string,
   ): Promise<Result<AllAdminUserDto>> {
-    
+
     const where = []
     // 将传过来的number[] | number转换为对应的条件
     if (Array.isArray(_roles)) where.push(..._roles.map(_r => {
@@ -232,8 +245,8 @@ export class UserService {
     else
       if (username) where.push({ roles: _roles, username: Like(`%${username}%`) })
       else where.push({ roles: _roles })
-    
-      const [list, total] = await this.adminUserRepository.findAndCount({
+
+    const [list, total] = await this.adminUserRepository.findAndCount({
       where,
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -253,7 +266,7 @@ export class UserService {
       where: { id: setAdminPasswordDto.id }
     })
     console.log(admin);
-    
+
     if (!admin) return Api.err(-1)
 
     try {
@@ -275,7 +288,7 @@ export class UserService {
       where: { id }
     })
     if (!admin) return Api.err(-1)
-    
+
     try {
       await this.adminUserRepository.softRemove(admin)
       return { message: '删除成功', code: 0 }

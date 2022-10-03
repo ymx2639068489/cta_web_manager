@@ -14,7 +14,7 @@ export class JournalismService {
     @InjectRepository(journalism)
     private readonly journalismRepository: Repository<journalism>,
     private readonly userService: UserService,
-  ) {}
+  ) { }
 
   private async findOneById(id: number): Promise<journalism> {
     return await this.journalismRepository.findOne({
@@ -42,7 +42,7 @@ export class JournalismService {
       user.roles.id !== AdminRole.audit_journalism_admin
     ) where = { author: user }
     if (content) where = { ...where, content: Like(`%${content}%`) }
-    
+
     const [list, total] = await this.journalismRepository.findAndCount({
       where,
       relations: ['author'],
@@ -79,7 +79,7 @@ export class JournalismService {
     if (!journalismItem) return { code: -1, message: `not found` }
     if (journalismItem.isApprove) return { code: -3, message: '已发布，请联系上级管理员进行打回' }
     try {
-      const { content , title } = updateJournalismDto
+      const { content, title } = updateJournalismDto
       await this.journalismRepository.save(
         await this.journalismRepository.preload({
           ...journalismItem,
@@ -88,7 +88,7 @@ export class JournalismService {
         })
       )
       return Api.ok('更新成功')
-    } catch(err) {
+    } catch (err) {
       return { code: -2, message: err.message };
     }
   }

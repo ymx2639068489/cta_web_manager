@@ -12,7 +12,7 @@ import { AdminRole } from '@/enum/roles';
 export class JournalismController {
   constructor(
     private readonly journalismService: JournalismService
-  ) {}
+  ) { }
 
   @Get()
   @ApiOperation({ description: '获取自己的所有表' })
@@ -32,7 +32,7 @@ export class JournalismController {
     return await this.journalismService.findAll(user, +page, +pageSize, content)
   }
 
-  @Patch(':id')
+  @Patch('audit/:id')
   @Roles(AdminRole.audit_journalism_admin, AdminRole.root)
   @ApiOperation({ description: '审核通过/拒绝新闻' })
   @ApiParam({ name: 'id' })
@@ -43,7 +43,7 @@ export class JournalismController {
     @Req() { user }: any,
     @Param('id') id: string,
     @Query('isApprove') isApprove: boolean,
-    @Query('reasonsForRefusal') reasonsForRefusal: string, 
+    @Query('reasonsForRefusal') reasonsForRefusal: string,
   ): Promise<Result<string>> {
     if (!await this.journalismService.checkAuthor(+id, user)) {
       return { code: -3, message: 'You are not the owner of this journalism!' }
@@ -58,7 +58,7 @@ export class JournalismController {
   async createItem(
     @Req() { user }: any,
     @Body() createJournalismDto: CreateJournalismDto
-  ): Promise<Result<string>>  {
+  ): Promise<Result<string>> {
     return this.journalismService.createJournalism(user, createJournalismDto)
   }
 
@@ -81,10 +81,12 @@ export class JournalismController {
 
   @Roles(AdminRole.root)
   @Patch('repulseJournalism')
-  @ApiOperation({ description: '对已审核的作品进行打回，取消公示'})
+  @ApiOperation({ description: '对已审核的作品进行打回，取消公示' })
   @ApiQuery({ name: 'id' })
   @SwaggerOk()
-  async repulseJournalism(@Query('id') id: string) {
-    return await this.journalismService.repulseJournalism(+id)
+  async repulseJournalism(@Query('id') id: number) {
+    console.log(id);
+
+    return await this.journalismService.repulseJournalism(id)
   }
 }
