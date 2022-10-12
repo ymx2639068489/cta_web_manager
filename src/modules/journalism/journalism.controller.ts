@@ -26,7 +26,7 @@ export class JournalismController {
     @Query('pageSize') pageSize: string,
     @Query('content') content: string
   ): Promise<Result<GetJournalismDto>> {
-    if (+pageSize === 0 || +page === 0) {
+    if (+pageSize <= 0 || +page <= 0) {
       return { code: -1, message: 'page or pageSize is not zero' };
     }
     return await this.journalismService.findAll(user, +page, +pageSize, content)

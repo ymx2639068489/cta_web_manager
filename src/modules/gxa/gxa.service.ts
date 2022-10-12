@@ -3,7 +3,7 @@ import { SetGxaScoreDto } from '@/dto/gxa';
 import { GxaApplicationForm, GxaScore, GxaWork } from '@/entities/gxa';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { ActiveTimeService } from '../active-time/active-time.service';
 import { UserService } from '../user/user.service';
 @Injectable()
@@ -50,20 +50,15 @@ export class GxaService {
         })
         return item
       }))
-    
-    const data = {
-      static: res.filter(item => item.gxaApplicationForm.group).map(item => {
-        delete item.gxaApplicationForm
-        return item
-      }),
-      dynamic: res.filter(item => !item.gxaApplicationForm.group).map(item => {
-        delete item.gxaApplicationForm
-        return item
-      }),
-    }
-    return {
-      code: 0, message: '', data
-    }
+    const staticArray = [], dynamicArray = []
+    res.forEach((item) => {
+      if (item.gxaApplicationForm.group) dynamicArray.push(item)
+      else staticArray.push(item)
+    })
+    return Api.ok({
+      static: staticArray,
+      dynamic: dynamicArray,
+    })
   }
 
   // 给作品打分
@@ -103,48 +98,54 @@ export class GxaService {
 
   // 获取所有作品总分对应的分数（评分完成）
   async getAllWorkAndScore() {
-    const data = await Promise.all(
-      (await this.gxaWordRepository.find({
-        where: { isApproved: true },
-        relations: ['gxaApplicationForm']
-      })).filter((item: GxaWork) => item.gxaApplicationForm).map(async (item: GxaWork) => {
-        const {
-          leader,
-          teamMember1,
-          teamMember2,
-          teamName,
-          workName
-        } = await this.gxaApplicationFormRepository.findOne({
-          where: { id: item.gxaApplicationForm.id },
-          relations: ['leader', 'teamMember1', 'teamMember2']
+    try {
+      const data = await Promise.all(
+        (await this.gxaWordRepository.find({
+          where: { isApproved: true },
+          relations: ['gxaApplicationForm']
+        })).filter((item: GxaWork) => item.gxaApplicationForm).map(async (item: GxaWork) => {
+          const {
+            leader,
+            teamMember1,
+            teamMember2,
+            teamName,
+            workName
+          } = await this.gxaApplicationFormRepository.findOne({
+            where: { id: item.gxaApplicationForm.id },
+            relations: ['leader', 'teamMember1', 'teamMember2']
+          })
+          for (const item of ['id', 'gender', 'qq', 'phoneNumber', 'avatarUrl']) {
+            if (leader) delete leader[item]
+            if (teamMember1) delete teamMember1[item]
+            if (teamMember2) delete teamMember2[item]
+          }
+          const _ = await this.gxaScoreRepository.findOne({
+            select: ['score'],
+            where: { work: item }
+          })
+          if (_) throw new Error('尚未完成全部打分')
+          const score = JSON.parse(_.score)
+          for(const key in score) {
+            score[key] = score[key].reduce((pre: number, curt: number) => pre + curt, 0)
+          }
+          return {
+            teamName,
+            workName,
+            websiteUrl: item.websiteUrl,
+            websiteIntroduction: item.websiteIntroduction,
+            showImg: item.showImg,
+            githubUrl: item.githubUrl,
+            leader,
+            teamMember1,
+            teamMember2,
+            score
+          }
         })
-        for (const item of ['id', 'gender', 'qq', 'phoneNumber', 'avatarUrl']) {
-          if (leader) delete leader[item]
-          if (teamMember1) delete teamMember1[item]
-          if (teamMember2) delete teamMember2[item]
-        }
-        const score = JSON.parse((await this.gxaScoreRepository.findOne({
-          select: ['score'],
-          where: { work: item }
-        })).score)
-        for(const key in score) {
-          score[key] = score[key].reduce((pre: number, curt: number) => pre + curt, 0)
-        }
-        return {
-          teamName,
-          workName,
-          websiteUrl: item.websiteUrl,
-          websiteIntroduction: item.websiteIntroduction,
-          showImg: item.showImg,
-          githubUrl: item.githubUrl,
-          leader,
-          teamMember1,
-          teamMember2,
-          score
-        }
-      })
-    )
-    return { code: 0, message: '', data };
+      )
+      return { code: 0, message: '', data };
+    } catch (err) {
+      return Api.err(-1, err.message)
+    }
   }
   // 初审
   async firstTrialGxaWork(id: number, status: boolean) {
@@ -167,7 +168,7 @@ export class GxaService {
   // 获取未审核的作品或拒绝的作品
   async getUnapprovedWork() {
     const list = await this.gxaWordRepository.find({
-      where: { isApproved: Not(true) },
+      where: [{ isApproved: false }, { isApproved: IsNull() }],
       relations: ['gxaApplicationForm']
     })
     return Api.ok({

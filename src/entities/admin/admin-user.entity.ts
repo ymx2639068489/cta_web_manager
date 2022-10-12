@@ -27,7 +27,7 @@ export class AdminUser extends BaseEntity {
 
   @Column({ nullable: true })
   email: string;
-  
+
   @Column()
   phone: string;
 

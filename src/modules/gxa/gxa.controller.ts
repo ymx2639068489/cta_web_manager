@@ -23,7 +23,7 @@ export class GxaController {
   @SwaggerOk(GetAllGxaDto)
   async getAll(@Req() { user }: any) {
     if (
-      !await this.activeTimeService.isActive(activeName.GXA_works_scoring) ||
+      !await this.activeTimeService.isActive(activeName.GXA_works_scoring) &&
       !await this.activeTimeService.isActive(activeName.GXA_approve)
     ) {
       return { code: -1, message: '当前不能审核' }

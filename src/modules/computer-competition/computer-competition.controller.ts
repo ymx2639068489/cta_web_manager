@@ -1,5 +1,6 @@
 import { SwaggerOk, SwaggerPagerOk } from '@/common/decorators';
 import { AllQuestionDto, CreateQuestionDto, UpdateQuestionDto } from '@/dto/computerKnowledge';
+import { AnsEnum, TopicType } from '@/enum/TopicType';
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ComputerCompetitionService } from './computer-competition.service';
@@ -15,7 +16,7 @@ import { ComputerCompetitionService } from './computer-competition.service';
 export class ComputerCompetitionController {
   constructor(
     private readonly computerService: ComputerCompetitionService,
-  ){}
+  ) { }
 
   @Get()
   @ApiOperation({ description: '获取题目列表' })
@@ -35,15 +36,35 @@ export class ComputerCompetitionController {
   @ApiOperation({ description: '新建一个题目' })
   @ApiBody({ type: CreateQuestionDto })
   @SwaggerOk()
-  async createItem(@Body() createQuestionDto: CreateQuestionDto) {
-    return await this.computerService.createQuestionItem(createQuestionDto)
+  @ApiQuery({ name: 'ans', enum: AnsEnum })
+  @ApiQuery({ name: 'type', enum: TopicType })
+  async createItem(
+    @Body() createQuestionDto: CreateQuestionDto,
+    @Query('ans') ans: string,
+    @Query('type') type: string,
+  ) {
+    return await this.computerService.createQuestionItem(
+      createQuestionDto,
+      AnsEnum[ans],
+      TopicType[type]
+    )
   }
   @Put()
   @ApiOperation({ description: '更新题目信息' })
   @ApiBody({ type: UpdateQuestionDto })
   @SwaggerOk()
-  async updateItem(@Body() updateQuestionDto: UpdateQuestionDto) {
-    return await this.computerService.updateQuestionItem(updateQuestionDto)
+  @ApiQuery({ name: 'ans', enum: AnsEnum })
+  @ApiQuery({ name: 'type', enum: TopicType })
+  async updateItem(
+    @Body() updateQuestionDto: UpdateQuestionDto,
+    @Query('ans') ans: string,
+    @Query('type') type: string
+  ) {
+    return await this.computerService.updateQuestionItem(
+      updateQuestionDto,
+      AnsEnum[ans],
+      TopicType[type]
+    )
   }
   @Delete(':id')
   @ApiOperation({ description: '删除一个题目' })

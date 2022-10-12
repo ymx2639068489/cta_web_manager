@@ -37,7 +37,6 @@ export class RoutersService {
     const routers = this.transformationToGetRouterDto(
       await this.findAllByRole(user.roles)
     )
-    
     return { code: 0, message: '获取成功', data: routers }
   }
 
