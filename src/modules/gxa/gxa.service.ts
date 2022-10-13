@@ -3,7 +3,7 @@ import { SetGxaScoreDto } from '@/dto/gxa';
 import { GxaApplicationForm, GxaScore, GxaWork } from '@/entities/gxa';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Not, Repository } from 'typeorm';
+import { IsNull, Like, Not, Repository } from 'typeorm';
 import { ActiveTimeService } from '../active-time/active-time.service';
 import { UserService } from '../user/user.service';
 @Injectable()
@@ -182,8 +182,20 @@ export class GxaService {
   }
 
   async findRegistered(skip: number, take: number, content: string) {
+    let where: any
+    if (content) {
+      where = {
+        isDeliver: true,
+        teamName: Like(`%${content}%`)
+      }
+    } else {
+      where = {
+        isDeliver: true,
+      }
+    }
     const [list, total] = await this.gxaApplicationFormRepository.findAndCount({
-      where: { isDeliver: true },
+      where,
+      relations: ['leader', 'teamMember1', 'teamMember2'],
       skip,
       take
     })
