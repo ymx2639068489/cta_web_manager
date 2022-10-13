@@ -4,8 +4,8 @@ import { Roles } from '@/common/decorators/Role/roles.decorator';
 import { SetGxaScoreDto, GetAllGxaDto, GetFinalsTeamList } from '@/dto/gxa';
 import { activeName } from '@/enum/active-time';
 import { AdminRole } from '@/enum/roles';
-import { Body, Controller, Get, Param, Patch, Put, Req } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Patch, Put, Query, Req } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ActiveTimeService } from '../active-time/active-time.service';
 import { GxaService } from './gxa.service';
 @ApiTags('gxa')
@@ -83,5 +83,24 @@ export class GxaController {
       return { code: -10, message: '未到时间'}
     }
     return await this.gxaService.getFinalsTeamList()
+  }
+  
+
+  @Get('registeredList')
+  @ApiOperation({ description: '获取所有已经报名了的队伍' })
+  @ApiQuery({ name: 'page' })
+  @ApiQuery({ name: 'pageSize' })
+  @ApiQuery({ name: 'content', required: false })
+  @SwaggerOk()
+  async registeredList(
+    @Query('page') page: number,
+    @Query('pageSize') pageSize: number,
+    @Query('content') content: string
+  ) {
+    return await this.gxaService.findRegistered(
+      page - 1,
+      (page - 1) * pageSize,
+      content
+    )
   }
 }

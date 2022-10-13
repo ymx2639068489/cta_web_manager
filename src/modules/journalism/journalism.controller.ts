@@ -45,9 +45,6 @@ export class JournalismController {
     @Query('isApprove') isApprove: boolean,
     @Query('reasonsForRefusal') reasonsForRefusal: string,
   ): Promise<Result<string>> {
-    if (!await this.journalismService.checkAuthor(+id, user)) {
-      return { code: -3, message: 'You are not the owner of this journalism!' }
-    }
     return this.journalismService.auditJournalism(+id, isApprove, reasonsForRefusal)
   }
 

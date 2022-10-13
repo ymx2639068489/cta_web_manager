@@ -180,4 +180,13 @@ export class GxaService {
   // 获取决赛名单
   async getFinalsTeamList() {
   }
+
+  async findRegistered(skip: number, take: number, content: string) {
+    const [list, total] = await this.gxaApplicationFormRepository.findAndCount({
+      where: { isDeliver: true },
+      skip,
+      take
+    })
+    return Api.pagerOk({ list, total })
+  }
 }
