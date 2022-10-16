@@ -16,6 +16,9 @@ export class AlgorithmIntegral extends BaseEntity {
   @Column()
   compititionName: string;
 
-  @Column()
+  @Column({ type: 'double' })
   integral: number;
+
+  @Column()
+  description: string;
 }

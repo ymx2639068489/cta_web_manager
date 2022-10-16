@@ -146,6 +146,29 @@ export class UserService {
       ]
     })
   }
+  // 模糊查询，确定年级
+  async findOneByContentAndClass(content: string, grade: number) {
+    return await this.userRepository.find({
+      where: [
+        {
+          studentId: Like(`%${content}%`),
+          class: Like(`${grade}_`)
+        },
+        {
+          username: Like(`%${content}%`),
+          class: Like(`${grade}_`)
+        }
+      ]
+    })
+  }
+  // 模糊查询，确定年级
+  async findOneByClass(grade: number) {
+    return await this.userRepository.find({
+      where: {
+        class: Like(`${grade}_`)
+      }
+    })
+  }
   // 获取当届所有干部
   async findAllCadres() {
     return await this.userRepository.find({

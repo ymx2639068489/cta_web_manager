@@ -27,4 +27,9 @@ export class AlgorithmIntegralDto {
   @IsNumber()
   @ApiProperty({ description: '积分' })
   integral: number;
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({ description: '比赛名称' })
+  description: string;
 }

@@ -38,20 +38,18 @@ export class AlgorithmIntegralController {
   }
 
   @Get()
-  @NoAuth()
+  @NoAuth(0)
   @ApiOperation({ description: '获取/查询积分记录, public' })
-  @ApiQuery({ name: 'page' })
-  @ApiQuery({ name: 'pageSize' })
   @ApiQuery({ name: 'semester', description: '学期' })
-  @ApiQuery({ name: 'studentId', description: '学号', required: false })
+  @ApiQuery({ name: 'content', description: '学号', required: false })
+  @ApiQuery({ name: 'group', description: '组别, true=>A组，false=>B组' })
   async findAll(
-    @Query('page') page: number,
-    @Query('pageSize') pageSize: number,
     @Query('semester') semester: string,
-    @Query('studentId') studentId: string,
+    @Query('content') content: string,
+    @Query('group') group: boolean,
   ) {
     return await this.integralService.findAll(
-      page, pageSize, semester, studentId
+      semester, content, group
     )
   }
 }

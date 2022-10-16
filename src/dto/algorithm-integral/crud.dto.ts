@@ -6,6 +6,7 @@ export class CreateIntegral extends PickType(AlgorithmIntegralDto, [
   'compititionName',
   'integral',
   'semester',
+  'description',
 ]) {
   @ApiProperty({ description: '姓名' })
   @IsString()
@@ -14,6 +15,7 @@ export class CreateIntegral extends PickType(AlgorithmIntegralDto, [
 }
 export class UpdateIntegral extends PickType(CreateIntegral, [
   'integral',
+  'description',
 ]) {
   @ApiProperty({ description: 'id' })
   @IsNumber()
