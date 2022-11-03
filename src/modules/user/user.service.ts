@@ -8,6 +8,7 @@ import { Api } from '@/common/utils/api';
 import { Result } from '@/common/interface/result';
 import { MD5 } from 'crypto-js';
 import { SetUserInfo } from '@/dto/users';
+import { decrypt } from '@/common/utils/encryption';
 @Injectable()
 export class UserService {
   constructor(
@@ -27,6 +28,7 @@ export class UserService {
     try {
       await this.userRepository.save({
         ...user,
+        username: setUserInfo.username,
         password: MD5(setUserInfo.password).toString()
       })
       return Api.ok()
@@ -326,6 +328,7 @@ export class UserService {
     updateAdminSelfInfo: UpdateAdminSelfInfoDto
   ): Promise<Result<string>> {
     try {
+      updateAdminSelfInfo.password = MD5(updateAdminSelfInfo.password).toString()
       await this.adminUserRepository.save(
         await this.adminUserRepository.preload({
           ...admin,

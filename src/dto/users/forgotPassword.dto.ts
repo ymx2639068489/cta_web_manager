@@ -16,6 +16,7 @@ export class ForgotPasswordDto extends PickType(AllUserDto, [
 export class SetUserInfo extends PartialType(
   class extends PickType(AllUserDto, [
     'id',
-    'password'
+    'password',
+    'username'
   ]) {}
 ) {}

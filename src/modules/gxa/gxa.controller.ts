@@ -1,7 +1,7 @@
-import { SwaggerOk } from '@/common/decorators';
+import { SwaggerOk, SwaggerPagerOk } from '@/common/decorators';
 import { NoAuth } from '@/common/decorators/Role/customize';
 import { Roles } from '@/common/decorators/Role/roles.decorator';
-import { SetGxaScoreDto, GetAllGxaDto, GetFinalsTeamList } from '@/dto/gxa';
+import { SetGxaScoreDto, GetAllGxaDto, GetFinalsTeamList, GxaDto } from '@/dto/gxa';
 import { activeName } from '@/enum/active-time';
 import { AdminRole } from '@/enum/roles';
 import { Body, Controller, Get, Param, Patch, Put, Query, Req } from '@nestjs/common';
@@ -91,15 +91,16 @@ export class GxaController {
   @ApiQuery({ name: 'page' })
   @ApiQuery({ name: 'pageSize' })
   @ApiQuery({ name: 'content', required: false })
-  @SwaggerOk()
+  @SwaggerPagerOk(GxaDto)
   async registeredList(
     @Query('page') page: number,
     @Query('pageSize') pageSize: number,
     @Query('content') content: string
   ) {
+    
     return await this.gxaService.findRegistered(
-      page - 1,
       (page - 1) * pageSize,
+      pageSize,
       content
     )
   }

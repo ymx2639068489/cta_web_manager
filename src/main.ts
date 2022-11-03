@@ -51,12 +51,12 @@ async function bootstrap() {
     // new TimeoutInterceptor(),
   );
   // 限速
-  app.use(
-    rateLimit({
-      windowMs: 60 * 1000,
-      max: 100,
-    }),
-  )
+  // app.use(
+  //   rateLimit({
+  //     windowMs: 60 * 1000,
+  //     max: 100,
+  //   }),
+  // )
   // csrf保护
   // app.use(csurf());
   // Helmet 可以帮助保护应用免受一些众所周知的 Web 漏洞的影响

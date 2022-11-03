@@ -193,6 +193,7 @@ export class GxaService {
         isDeliver: true,
       }
     }
+
     const [list, total] = await this.gxaApplicationFormRepository.findAndCount({
       where,
       relations: ['leader', 'teamMember1', 'teamMember2'],
