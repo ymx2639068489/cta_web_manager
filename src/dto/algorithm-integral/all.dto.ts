@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { UserDto } from '../users';
 
 export class AlgorithmIntegralDto {
@@ -32,4 +32,9 @@ export class AlgorithmIntegralDto {
   @IsString()
   @ApiProperty({ description: '比赛名称' })
   description: string;
+  
+  @IsNotEmpty()
+  @IsBoolean()
+  @ApiProperty({ description: '组别, A组TRUE, B组FALSE' })
+  group: boolean;
 }

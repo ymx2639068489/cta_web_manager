@@ -21,4 +21,7 @@ export class AlgorithmIntegral extends BaseEntity {
 
   @Column()
   description: string;
+
+  @Column({ type: 'bool' })
+  group: boolean;
 }

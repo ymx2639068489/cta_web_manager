@@ -5,7 +5,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserService } from '../user/user.service';
 import { CreateIntegral, UpdateIntegral } from '@/dto/algorithm-integral';
-import { User } from '@/entities/admin';
 @Injectable()
 export class AlgorithmIntegralService {
   constructor(
@@ -16,81 +15,42 @@ export class AlgorithmIntegralService {
 
   async findAll(
     semester: string,
-    content: string,
     group: boolean,
   ) {
-    const year = new Date().getFullYear()
-    let where: { semester: string, user?: User }[] = []
-    if (content) {
-      const users: User[] = []
-      if (group) {
-        users.push(...await this.userService.findOneByContentAndClass(
-          content,
-          year
-        ))
-      } else {
-        for (const item of [year - 1, year - 2]) {
-          users.push(...await this.userService.findOneByContentAndClass(
-            content,
-            item
-          ))
-        }
-      }
-      where = users.map((user: User) => ({ user, semester }))
-    } else {
-      const users: User[] = []
-      if (group) {
-        users.push(...await this.userService.findOneByClass(year))
-      } else {
-        for (const item of [year - 1, year - 2]) {
-          users.push(...await this.userService.findOneByClass(item))
-        }
-      }
-      where = users.map((user: User) => ({ user, semester }))
-    }
-    const [_list, total] = await this.integralRepository.findAndCount({
-      where,
-      relations: ['user']
+    let _res = await this.integralRepository.find({
+      where: { semester, group },
+      relations: ['user'],
     })
-    const list = []
-    const row = []
-    _list.forEach(item => {
-      if (!row.includes(item.compititionName)) row.push(item.compititionName)
-      const idx = list.findIndex(_item => _item.user.studentId === item.user.studentId)
-      const res = {
-        id: item.id,
-        integral: item.integral,
-        competitionName: item.compititionName,
-        semester: item.semester,
-        description: item.description,
-      }
-      if (idx !== -1) {
-        list[idx].list.push(res)
-        list[idx].ans += res.integral
-      } else {
-        list.push({
-          user: item.user,
-          ans: res.integral,
-          list: new Array(1).fill(res)
+    _res = _res.filter(v => v.user !== null)
+    const header = new Set<string>([..._res.map((v) => v.compititionName)]);
+    const data = new Map<string, any>();
+    _res.forEach((v) => {
+      if (!data.has(v.user.studentId)) {
+        data.set(v.user.studentId, {
+          user: {
+            username: v.user.username,
+            major: v.user.major,
+          },
+          ans: 0,
+          list: []
         })
       }
+      const item = data.get(v.user.studentId);
+      item.ans += v.integral;
+      item.list.push({
+        id: v.id,
+        description: v.description,
+        competitionName: v.compititionName,
+        integral: v.integral,
+      })
+      data.set(v.user.studentId, item);
     })
-    row.sort((a, b) => {
-      const _1 = a.match(/[0-9]{1,2}/)
-      const _2 = b.match(/[0-9]{1,2}/)
-      if (!_1) return 1;
-      if (!_2) return -1;
-      return _1[0] - _2[0];
-    })
-    row.unshift('总分')
-    list.sort((a, b) => {
-      return b.ans - a.ans
-    })
-    return {
-      code: 0,
-      list,
-      row
-    }
+    const row = Array.from(header);
+    row.unshift('总分');
+    const list = []
+    data.forEach(v => list.push(v));
+    list.sort((a, b) => b.ans - a.ans);
+    return { code: 0, row, list };
   }
 
   async createItem(createIntegral: CreateIntegral) {
@@ -101,7 +61,7 @@ export class AlgorithmIntegralService {
       where: {
         compititionName: createIntegral.compititionName,
         semester: createIntegral.semester,
-        user
+        user,
       }
     })
     if (_item) return Api.err(-3, '重复')

@@ -7,6 +7,7 @@ export class CreateIntegral extends PickType(AlgorithmIntegralDto, [
   'integral',
   'semester',
   'description',
+  'group',
 ]) {
   @ApiProperty({ description: '姓名' })
   @IsString()

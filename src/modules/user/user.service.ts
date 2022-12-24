@@ -328,7 +328,7 @@ export class UserService {
     updateAdminSelfInfo: UpdateAdminSelfInfoDto
   ): Promise<Result<string>> {
     try {
-      updateAdminSelfInfo.password = MD5(updateAdminSelfInfo.password).toString()
+      if (updateAdminSelfInfo.password) updateAdminSelfInfo.password = MD5(updateAdminSelfInfo.password).toString()
       await this.adminUserRepository.save(
         await this.adminUserRepository.preload({
           ...admin,

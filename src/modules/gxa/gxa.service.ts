@@ -22,43 +22,89 @@ export class GxaService {
   // 获取所有的报名表信息
   // 分组
   async findWordAll(user: any) {
-    const list = await this.gxaWordRepository.find({
+    let list: any = await this.gxaWordRepository.find({
       where: { isApproved: true },
       relations: ['gxaApplicationForm']
     })
-    // 如果取消报名了，即这份作品没有对应的报名表
-    // 就需要过滤一遍。然后查询到sql
-    const res = await Promise.all(list.filter(item => item.gxaApplicationForm)
-      .map(async (item) => {
-        let value = await this.gxaScoreRepository.findOne({
-          where: { work: item }
-        })
-        // 获取当前用户的打分表
-        if (value?.score) value = JSON.parse(value.score)[user.id]
-        // 添加字段
-        Reflect.defineProperty(item, 'score', {
-          value: value || new Array(14).fill(0),
-          configurable: false,
-          enumerable: true,
-          writable: true
-        })
-        Reflect.defineProperty(item, 'workName', {
-          value: item.gxaApplicationForm.workName,
-          configurable: false,
-          enumerable: true,
-          writable: true
-        })
-        return item
-      }))
+    let scores: any = await this.gxaScoreRepository.find({
+      relations: ['work']
+    })
+    scores = scores.map((v: any) => ({
+      ...v,
+      work: v.work.id
+    }))
+    list = list.map((item: any) => {
+      const {
+        id,
+        showImg,
+        websiteIntroduction,
+        websiteUrl,
+        githubUrl,
+        gxaApplicationForm,
+      } = item;
+      let res: any = {
+        id,
+        showImg,
+        websiteIntroduction,
+        websiteUrl,
+        githubUrl,
+        formId: gxaApplicationForm.id,
+        workName: gxaApplicationForm.workName,
+        group: gxaApplicationForm.group
+      }
+      let idx = scores.findIndex((v: any) => v.work === item.id);
+      if (idx === -1) res.score = new Array(14).fill(0);
+      else {
+        let _sc = JSON.parse(scores[idx].score);
+        if (_sc[user.id]) res.score = _sc[user.id];
+        else res.score = new Array(14).fill(0);
+        scores.splice(idx, 1);
+      }
+      return res;
+    })
     const staticArray = [], dynamicArray = []
-    res.forEach((item) => {
-      if (item.gxaApplicationForm.group) dynamicArray.push(item)
+    list.forEach((item: any) => {
+      if (item.group) dynamicArray.push(item)
       else staticArray.push(item)
     })
     return Api.ok({
       static: staticArray,
       dynamic: dynamicArray,
     })
+
+    // return Api.ok({ list, })
+    // // 如果取消报名了，即这份作品没有对应的报名表
+    // // 就需要过滤一遍。然后查询到sql
+    // const res = await Promise.all(list.map(async (item) => {
+    //   let value = await this.gxaScoreRepository.findOne({
+    //     where: { work: item }
+    //   })
+    //   // 获取当前用户的打分表
+    //   if (value?.score) value = JSON.parse(value.score)[user.id]
+    //   // 添加字段
+    //   Reflect.defineProperty(item, 'score', {
+    //     value: value || new Array(14).fill(0),
+    //     configurable: false,
+    //     enumerable: true,
+    //     writable: true
+    //   })
+    //   Reflect.defineProperty(item, 'workName', {
+    //     value: item.gxaApplicationForm.workName,
+    //     configurable: false,
+    //     enumerable: true,
+    //     writable: true
+    //   })
+    //   return item
+    // }))
+    // const staticArray = [], dynamicArray = []
+    // res.forEach((item) => {
+    //   if (item.gxaApplicationForm.group) dynamicArray.push(item)
+    //   else staticArray.push(item)
+    // })
+    // return Api.ok({
+    //   static: staticArray,
+    //   dynamic: dynamicArray,
+    // })
   }
 
   // 给作品打分
@@ -74,6 +120,7 @@ export class GxaService {
     try {
       if (__score) {
         const _s = JSON.parse(__score.score)
+        if (!Array.isArray(_s[user.id])) _s[user.id] = new Array(14).fill(0);
         _s[user.id][setGxaScoreDto.idx] = setGxaScoreDto.score
         score = await this.gxaScoreRepository.preload({
           ...__score,
@@ -92,7 +139,7 @@ export class GxaService {
       await this.gxaScoreRepository.save(score);
       return Api.ok()
     } catch (err) {
-      return { code: -3, message: err };
+      return { code: -3, message: err.message };
     }
   }
 
@@ -123,10 +170,14 @@ export class GxaService {
             select: ['score'],
             where: { work: item }
           })
-          if (_) throw new Error('尚未完成全部打分')
-          const score = JSON.parse(_.score)
-          for(const key in score) {
-            score[key] = score[key].reduce((pre: number, curt: number) => pre + curt, 0)
+          console.log(_);
+          let score: any = {};
+          if (!_) score = {};
+          else {
+            score = JSON.parse(_.score)
+            for(const key in score) {
+              score[key] = score[key].reduce((pre: number, curt: number) => pre + curt, 0)
+            }
           }
           return {
             teamName,
