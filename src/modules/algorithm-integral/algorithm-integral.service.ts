@@ -46,10 +46,16 @@ export class AlgorithmIntegralService {
       data.set(v.user.studentId, item);
     })
     const row = Array.from(header);
-    row.unshift('总分');
-    const list = []
+    const list = [];
     data.forEach(v => list.push(v));
     list.sort((a, b) => b.ans - a.ans);
+    row.sort((a: string, b: string) => {
+      const ast: number = Number(a.substring(1, a.length - 1));
+      const bst: number = Number(b.substring(1, b.length - 1));
+      return ast - bst;
+    });
+    console.log(row);
+    row.unshift('总分');
     return { code: 0, row, list };
   }
 
@@ -108,5 +114,13 @@ export class AlgorithmIntegralService {
     } catch (err) {
       return Api.err(-1, err.message)
     }
+  }
+  async deleteIntegralByCompititionName(compititionName: string) {
+    const list = await this.integralRepository.find({
+      where: { compititionName }
+    });
+    if (list.length === 0) return Api.err(-1, '没有找到该比赛');
+    await this.integralRepository.softRemove(list);
+    return Api.ok();
   }
 }

@@ -1,5 +1,5 @@
 import { ApiProperty, IntersectionType, PartialType, PickType } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsArray, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { AlgorithmIntegralDto } from './all.dto';
 
 export class CreateIntegral extends PickType(AlgorithmIntegralDto, [
@@ -13,6 +13,12 @@ export class CreateIntegral extends PickType(AlgorithmIntegralDto, [
   @IsString()
   @IsNotEmpty()
   studentId: string;
+}
+export class CreateIntegrals {
+  @ApiProperty({ description: '一组单数据' })
+  @IsArray()
+  @IsNotEmpty()
+  data: CreateIntegral[];
 }
 export class UpdateIntegral extends PickType(CreateIntegral, [
   'integral',

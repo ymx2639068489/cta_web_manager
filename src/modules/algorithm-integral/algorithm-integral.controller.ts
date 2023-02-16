@@ -1,7 +1,7 @@
 import { SwaggerOk, SwaggerPagerOk } from '@/common/decorators';
 import { NoAuth } from '@/common/decorators/Role/customize';
-import { CreateIntegral, UpdateIntegral } from '@/dto/algorithm-integral';
-import { Body, Controller, Delete, Get, Patch, Post, Query } from '@nestjs/common';
+import { CreateIntegral, CreateIntegrals, UpdateIntegral } from '@/dto/algorithm-integral';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { AlgorithmIntegralService } from './algorithm-integral.service';
 
@@ -36,6 +36,15 @@ export class AlgorithmIntegralController {
   async deleteItem(@Query('id') id: number) {
     return await this.integralService.deleteItem(id);
   }
+
+  @Delete('deleteIntegralByCompititionName')
+  @ApiQuery({ name: 'compititionName' })
+  @ApiOperation({ description: '通过比赛名称，删除整个比赛积分' })
+  @SwaggerOk()
+  async deleteIntegralByCompititionName(@Query('compititionName') compititionName: string) {
+    return await this.integralService.deleteIntegralByCompititionName(compititionName);
+  }
+
 
   @Get()
   @NoAuth(0)

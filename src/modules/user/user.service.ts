@@ -9,6 +9,7 @@ import { Result } from '@/common/interface/result';
 import { MD5 } from 'crypto-js';
 import { SetUserInfo } from '@/dto/users';
 import { decrypt } from '@/common/utils/encryption';
+import { CreateRoleDto, UpdateRoleInfoDto, UpdateRoleRouterDto } from '@/dto/roles';
 @Injectable()
 export class UserService {
   constructor(
@@ -84,8 +85,10 @@ export class UserService {
     if (content) {
       [list, total] = await this.userRepository.findAndCount({
         where: [
+          { qq: Like(`%${content}%`) },
           { username: Like(`%${content}%`) },
-          { studentId: Like(`%${content}%`) }
+          { studentId: Like(`%${content}%`) },
+          { phoneNumber: Like(`%${content}%`) },
         ],
         relations: ['identity'],
         skip: (page - 1) * pageSize,
@@ -236,16 +239,49 @@ export class UserService {
       where: { id }
     })
   }
+  async deleteRoles(id: number) {
+    const item = await this.getRolesById(id);
+    return await this.rolesRepository.softRemove(item);
+  }
+  async createRoles(createRolesDto: CreateRoleDto) {
+    return await this.rolesRepository.save({
+      ...createRolesDto,
+      routers: '[]',
+    });
+  }
+  async updateRolesInfo(updateRoleInfoDto: UpdateRoleInfoDto) {
+    let item = await this.getRolesById(updateRoleInfoDto.id);
+    if (!item) return Api.err(-1, '角色不存在');
+    item = await this.rolesRepository.preload({
+      ...item,
+      ...updateRoleInfoDto
+    })
+    await this.rolesRepository.save(item);
+    return Api.ok();
+  }
   // 获取角色的信息， 包括路由
   async getRoleByName(roleName: string) {
     return this.rolesRepository.findOne({
-      where: { roleName },
-      relations: ['routers']
+      where: { roleName }
     })
+  }
+  /**
+   * @param updateRoleDto 更新路由
+   * @returns 
+   */
+  async setRole(updateRoleDto: UpdateRoleRouterDto) {
+    const role = await this.getRolesById(updateRoleDto.id);
+    if (!role) return Api.err(-1, `没用找到对应的role`);
+    const temp = await this.rolesRepository.preload({
+      ...role,
+      ...updateRoleDto,
+    })
+    await this.rolesRepository.save(temp);
+    return Api.ok();
   }
   // 创建一个管理员
   async createAdmin(createAdminDto: CreateAdminDto) {
-    const roles = await this.getRoleByName(AdminRole[createAdminDto.roles])
+    const roles = await this.getRolesById(createAdminDto.roles)
     if (!roles) throw new Error('roles is not found')
     const admin = this.adminUserRepository.create({
       ...createAdminDto,

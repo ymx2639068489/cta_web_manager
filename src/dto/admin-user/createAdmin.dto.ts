@@ -12,6 +12,6 @@ export class CreateAdminDto extends PickType(AllAdminUserDto, [
   'phone',
 ]) {
   @IsNotEmpty()
-  @ApiProperty({ description: '角色id', enum: AdminRole, default: AdminRole.root })
+  @ApiProperty({ description: '角色id' })
   roles: AdminRole;
 }

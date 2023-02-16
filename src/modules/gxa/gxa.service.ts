@@ -1,250 +1,263 @@
 import { Api } from '@/common/utils/api';
-import { SetGxaScoreDto } from '@/dto/gxa';
-import { GxaApplicationForm, GxaScore, GxaWork } from '@/entities/gxa';
+import { SetGxaNetworkScoreDto, SetGxaScoreDto } from '@/dto/gxa';
+import { GxaApplicationForm } from '@/entities/gxa';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Like, Not, Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { ActiveTimeService } from '../active-time/active-time.service';
 import { UserService } from '../user/user.service';
+import { GXA_STATUS } from '../../enum/gxa';
 @Injectable()
 export class GxaService {
   constructor(
     private readonly userService: UserService,
     private readonly activeTimeService: ActiveTimeService,
-    @InjectRepository(GxaScore)
-    private readonly gxaScoreRepository: Repository<GxaScore>,
-    @InjectRepository(GxaWork)
-    private readonly gxaWordRepository: Repository<GxaWork>,
     @InjectRepository(GxaApplicationForm)
     private readonly gxaApplicationFormRepository: Repository<GxaApplicationForm>,
   ) {}
 
-  // 获取所有的报名表信息
-  // 分组
-  async findWordAll(user: any) {
-    let list: any = await this.gxaWordRepository.find({
-      where: { isApproved: true },
-      relations: ['gxaApplicationForm']
-    })
-    let scores: any = await this.gxaScoreRepository.find({
-      relations: ['work']
-    })
-    scores = scores.map((v: any) => ({
-      ...v,
-      work: v.work.id
-    }))
-    list = list.map((item: any) => {
-      const {
-        id,
-        showImg,
-        websiteIntroduction,
-        websiteUrl,
-        githubUrl,
-        gxaApplicationForm,
-      } = item;
-      let res: any = {
-        id,
-        showImg,
-        websiteIntroduction,
-        websiteUrl,
-        githubUrl,
-        formId: gxaApplicationForm.id,
-        workName: gxaApplicationForm.workName,
-        group: gxaApplicationForm.group
-      }
-      let idx = scores.findIndex((v: any) => v.work === item.id);
-      if (idx === -1) res.score = new Array(14).fill(0);
-      else {
-        let _sc = JSON.parse(scores[idx].score);
-        if (_sc[user.id]) res.score = _sc[user.id];
-        else res.score = new Array(14).fill(0);
-        scores.splice(idx, 1);
-      }
-      return res;
+  private getNowSession(): number {
+    let now = new Date();
+    if (now.getMonth() >= 9) return now.getFullYear();
+    return now.getFullYear() - 1;
+  }
+
+  private getScoreAvg(score: string): number {
+    let t: any = JSON.parse(score);
+    let a_score: number = 0, cnt: number = 0;
+    for (const k in t) {
+      a_score += t[k].reduce((pre: number, curt: number) => pre + curt, 0);
+      cnt ++;
+    }
+    return a_score / cnt;
+  }
+
+  // 获取所有初审通过了的作品列表，以供打分
+  async findWordAll(admin: any) {
+    let session: number = this.getNowSession();
+    let list = await this.gxaApplicationFormRepository.find({
+      where: [
+        {
+          session,
+          // 通过初审的
+          status: GXA_STATUS.APPROVE,
+        }, {
+          session,
+          // 正在打分的
+          status: GXA_STATUS.SCORE,
+        }
+      ],
     })
     const staticArray = [], dynamicArray = []
-    list.forEach((item: any) => {
+    list.map((item) => {
+      let res: any = {
+        id: item.id,
+        indexHtmlImg: item.indexHtmlImg,
+        introductionToWorks: item.introductionToWorks,
+        websiteUrl: item.websiteUrl,
+        githubUrl: item.githubUrl,
+        group: item.group,
+        workName: item.workName,
+        networkScore: item.networkScore,
+      };
+      if (item.score && JSON.parse(item.score)[admin.id])
+        res.score = JSON.parse(item.score)[admin.id];
+      else res.score = new Array(14).fill(0);
+      return res;
+    }).forEach((item: any) => {
       if (item.group) dynamicArray.push(item)
       else staticArray.push(item)
     })
+    // 通过比较0分的个数，来进行排序，0分越多，说明越应该被打分
+    staticArray.sort((a, b) => {
+      let _1 = a.score.filter((f: number) => f !== 0).length;
+      let _2 = b.score.filter((f: number) => f !== 0).length
+      return _1 - _2;
+    })
+
+    dynamicArray.sort((a, b) => {
+      let _1 = a.score.filter((f: number) => f !== 0).length;
+      let _2 = b.score.filter((f: number) => f !== 0).length;
+      return _1 - _2;
+    })
+
     return Api.ok({
       static: staticArray,
       dynamic: dynamicArray,
     })
-
-    // return Api.ok({ list, })
-    // // 如果取消报名了，即这份作品没有对应的报名表
-    // // 就需要过滤一遍。然后查询到sql
-    // const res = await Promise.all(list.map(async (item) => {
-    //   let value = await this.gxaScoreRepository.findOne({
-    //     where: { work: item }
-    //   })
-    //   // 获取当前用户的打分表
-    //   if (value?.score) value = JSON.parse(value.score)[user.id]
-    //   // 添加字段
-    //   Reflect.defineProperty(item, 'score', {
-    //     value: value || new Array(14).fill(0),
-    //     configurable: false,
-    //     enumerable: true,
-    //     writable: true
-    //   })
-    //   Reflect.defineProperty(item, 'workName', {
-    //     value: item.gxaApplicationForm.workName,
-    //     configurable: false,
-    //     enumerable: true,
-    //     writable: true
-    //   })
-    //   return item
-    // }))
-    // const staticArray = [], dynamicArray = []
-    // res.forEach((item) => {
-    //   if (item.gxaApplicationForm.group) dynamicArray.push(item)
-    //   else staticArray.push(item)
-    // })
-    // return Api.ok({
-    //   static: staticArray,
-    //   dynamic: dynamicArray,
-    // })
   }
 
   // 给作品打分
   async setScore(user: any, setGxaScoreDto: SetGxaScoreDto) {
-    const item = await this.gxaWordRepository.findOne({
-      where: { id: setGxaScoreDto.id }
+    const gxaItem: GxaApplicationForm = await this.gxaApplicationFormRepository.findOne({
+      where: { id: setGxaScoreDto.id },
     });
-    if (!item) return { code: -2, message: '未查询到对应报名表' };
-    const __score = await this.gxaScoreRepository.findOne({
-      where: { work: item }
-    });
+    if (!gxaItem) return Api.err(-2, '未查询到对应报名表');
     let score: any;
+    if (gxaItem.score) score = JSON.parse(gxaItem.score);
+    else score = {};
+    if (!Array.isArray(score[user.id])) score[user.id] = new Array(14).fill(0);
+    score[user.id][setGxaScoreDto.idx] = setGxaScoreDto.score;
     try {
-      if (__score) {
-        const _s = JSON.parse(__score.score)
-        if (!Array.isArray(_s[user.id])) _s[user.id] = new Array(14).fill(0);
-        _s[user.id][setGxaScoreDto.idx] = setGxaScoreDto.score
-        score = await this.gxaScoreRepository.preload({
-          ...__score,
-          score: JSON.stringify(_s)
+      await this.gxaApplicationFormRepository.save(
+        await this.gxaApplicationFormRepository.preload({
+          ...gxaItem,
+          score: JSON.stringify(score),
+          status: GXA_STATUS.SCORE,
         })
-      } else {
-        const _s = {
-          [user.id]: new Array(14).fill(0)
-        }
-        _s[user.id][setGxaScoreDto.idx] = setGxaScoreDto.score
-        score = this.gxaScoreRepository.create({
-          work: item,
-          score: JSON.stringify(_s)
-        })
-      }
-      await this.gxaScoreRepository.save(score);
-      return Api.ok()
+      );
+      return Api.ok();
     } catch (err) {
-      return { code: -3, message: err.message };
+      return Api.err(-3, err.message)
     }
   }
 
-  // 获取所有作品总分对应的分数（评分完成）
+  // 获取所有作品以及分数
   async getAllWorkAndScore() {
-    try {
-      const data = await Promise.all(
-        (await this.gxaWordRepository.find({
-          where: { isApproved: true },
-          relations: ['gxaApplicationForm']
-        })).filter((item: GxaWork) => item.gxaApplicationForm).map(async (item: GxaWork) => {
-          const {
-            leader,
-            teamMember1,
-            teamMember2,
-            teamName,
-            workName
-          } = await this.gxaApplicationFormRepository.findOne({
-            where: { id: item.gxaApplicationForm.id },
-            relations: ['leader', 'teamMember1', 'teamMember2']
-          })
-          for (const item of ['id', 'gender', 'qq', 'phoneNumber', 'avatarUrl']) {
-            if (leader) delete leader[item]
-            if (teamMember1) delete teamMember1[item]
-            if (teamMember2) delete teamMember2[item]
+    const list: GxaApplicationForm[] = await this.gxaApplicationFormRepository.find({
+      where: [
+        {
+          status: GXA_STATUS.SCORED,
+          session: this.getNowSession(),
+        }, {
+          status: GXA_STATUS.SCORE,
+          session: this.getNowSession(),
+        }
+      ],
+      relations: ['leader', 'teamMember1', 'teamMember2'],
+    });
+    const staticList = [], dynamicList = [];
+    const teacherSet = new Set<string>();
+    list.map((item: GxaApplicationForm) => {
+      const res: any = {
+        teamName: item.teamName,
+        workName: item.workName,
+        introductionToWorks: item.introductionToWorks,
+        indexHtmlImg: item.indexHtmlImg,
+        githubUrl: item.githubUrl,
+        websiteUrl: item.websiteUrl,
+        group: item.group,
+        networkScore: item.networkScore,
+      };
+      for (const team of ['leader', 'teamMember1', 'teamMember2']) {
+        if (item[team]) {
+          res[team] = {};
+          for (const key of ['username', 'studentId', 'college', 'major', 'class']) {
+            res[team][key] = item[team][key];
           }
-          const _ = await this.gxaScoreRepository.findOne({
-            select: ['score'],
-            where: { work: item }
-          })
-          console.log(_);
-          let score: any = {};
-          if (!_) score = {};
-          else {
-            score = JSON.parse(_.score)
-            for(const key in score) {
-              score[key] = score[key].reduce((pre: number, curt: number) => pre + curt, 0)
-            }
-          }
-          return {
-            teamName,
-            workName,
-            websiteUrl: item.websiteUrl,
-            websiteIntroduction: item.websiteIntroduction,
-            showImg: item.showImg,
-            githubUrl: item.githubUrl,
-            leader,
-            teamMember1,
-            teamMember2,
-            score
-          }
-        })
-      )
-      return { code: 0, message: '', data };
-    } catch (err) {
-      return Api.err(-1, err.message)
-    }
+        }
+      }
+      let score = JSON.parse(item.score);
+      for (const key in score) {
+        teacherSet.add(key);
+      }
+      res.score = score;
+      res.avg = this.getScoreAvg(item.score);
+      return res;
+    }).forEach(item => {
+      const teachers: string[] = [...teacherSet];
+      let idx = 1;
+      for (const teacher of teachers) {
+        if (item.score[teacher]) {
+          item[`teacher${idx ++ }`] =
+            item.score[teacher].reduce((pre: number, curt: number) => pre + curt, 0);
+        }
+        else item[`teacher${idx ++ }`] = 0;
+      }
+      const { score, ...rest } = item;
+      if (item.group) dynamicList.push(rest);
+      else staticList.push(rest);
+    });
+    dynamicList.sort((a, b) => {
+      return b.avg - a.avg;
+    });
+    staticList.sort((a, b) => {
+      return b.avg - a.avg;
+    });
+    return Api.ok({ staticList, dynamicList, teachers: [...teacherSet] });
   }
   // 初审
   async firstTrialGxaWork(id: number, status: boolean) {
-    const _work = await this.gxaWordRepository.findOne({
-      where: { id }
-    })
-    if (!_work) return { code: -1, message: 'work is not found' }
+    const gxaItem: GxaApplicationForm = await this.gxaApplicationFormRepository.findOne({
+      where: { id },
+    });
+    
+    if (!gxaItem) return Api.err(-2, '没有找到对应的报名表');
+    let res: number;
+    // 如果已经提交作品了，初审成功，则把状态改成下一步
+    if (gxaItem.status === GXA_STATUS.WORK) {
+      if (status) res = gxaItem.status + 1;
+      else return Api.err(-4, '已经被打回/拒绝了，请勿重复操作');
+    }
+    // 如果已经初审通过了，但是被打回了，则需要吧状态改成上一步
+    if (gxaItem.status === GXA_STATUS.APPROVE) {
+      if (!status) res = gxaItem.status - 1;
+      else return Api.err(-4, '已经被初审过了，请勿重复操作');
+    }
     try {
-      await this.gxaWordRepository.save(
-        await this.gxaWordRepository.preload({
-          ..._work,
-          isApproved: status
+      await this.gxaApplicationFormRepository.save(
+        await this.gxaApplicationFormRepository.preload({
+          ...gxaItem,
+          status: res,
         })
       )
-      return Api.ok()
-    } catch (err) {
-      return { code: -2, message: err.message }
+      return Api.ok();
+    } catch(err) {
+      return Api.err(-3, err.message);
     }
   }
-  // 获取未审核的作品或拒绝的作品
-  async getUnapprovedWork() {
-    const list = await this.gxaWordRepository.find({
-      where: [{ isApproved: false }, { isApproved: IsNull() }],
-      relations: ['gxaApplicationForm']
-    })
-    return Api.ok({
-      static: list.filter(item => !item.gxaApplicationForm.group && item.isApproved !== false),
-      dynamic: list.filter(item => item.gxaApplicationForm.group && item.isApproved !== false),
-      rejected: list.filter(item => item.isApproved === false)
-    })
-  }
-  // 获取决赛名单
-  async getFinalsTeamList() {
-  }
 
+  // 获取需要审核的作品
+  async getUnapprovedWork() {
+    const list: GxaApplicationForm[] = await this.gxaApplicationFormRepository.find({
+      where: [
+        { status: GXA_STATUS.WORK, session: this.getNowSession() },
+        { status: GXA_STATUS.APPROVE, session: this.getNowSession() }
+      ],
+    })
+    const staticList = [], dynamicList = [];
+    list.forEach((item: GxaApplicationForm) => {
+      const itemResult = {
+        githubUrl: item.githubUrl,
+        teamName: item.teamName,
+        workName: item.workName,
+        indexHmtlImg: item.indexHtmlImg,
+        websiteUrl: item.websiteUrl,
+        introductionToWorks: item.introductionToWorks,
+        status: item.status,
+        id: item.id,
+      }
+      if (!item.group) staticList.push(itemResult);
+      else dynamicList.push(itemResult)
+    })
+    dynamicList.sort((a, b) => a.status - b.status);
+    staticList.sort((a, b) => a.status - b.status);
+
+    return Api.ok({ staticList, dynamicList });
+  }
+  
+  // 获取当届所有已经报名了的队伍
   async findRegistered(skip: number, take: number, content: string) {
     let where: any
+    let session: number = this.getNowSession();
     if (content) {
-      where = {
-        isDeliver: true,
-        teamName: Like(`%${content}%`)
-      }
+      where = [
+        {
+          session,
+          status: GXA_STATUS.REGISTERED,
+          teamName: Like(`%${content}%`),
+        }, {
+          session,
+          status: GXA_STATUS.REGISTERED,
+          workName: Like(`%${content}%`),
+        }
+      ]
     } else {
       where = {
-        isDeliver: true,
+        session,
+        status: GXA_STATUS.REGISTERED,
       }
     }
-
     const [list, total] = await this.gxaApplicationFormRepository.findAndCount({
       where,
       relations: ['leader', 'teamMember1', 'teamMember2'],
@@ -252,5 +265,98 @@ export class GxaService {
       take
     })
     return Api.pagerOk({ list, total })
+  }
+
+  // 给动态组设置网络安全得分
+  async setnetworkScore(setGxaNetworkScoreDto: SetGxaNetworkScoreDto) {
+    const { id, score } = setGxaNetworkScoreDto;
+    const item = await this.gxaApplicationFormRepository.findOne({
+      where: { id, session: this.getNowSession(), group: true }
+    });
+    if (!item) return Api.err(-1, 'not found work');
+    try {
+      await this.gxaApplicationFormRepository.save(
+        await this.gxaApplicationFormRepository.preload({
+          ...item,
+          networkScore: score,
+          status: GXA_STATUS.SCORE,
+        })
+      )
+      return Api.ok();
+    } catch (err) {
+      return Api.err(-2, err.message);
+    }
+  }
+
+  // 一键设置决赛名单
+  async setFinallyList() {
+    const session: number = this.getNowSession();
+    const _ = await this.gxaApplicationFormRepository.find({
+      where: { session, status: GXA_STATUS.FINALLY }
+    });
+    if (_.length !== 0) return Api.err(-2, '请勿重复操作');
+    let dl: GxaApplicationForm[] = await this.gxaApplicationFormRepository.find({
+      where: { session, status: GXA_STATUS.SCORE, group: true },
+    });
+    let sl: GxaApplicationForm[] = await this.gxaApplicationFormRepository.find({
+      where: { session, status: GXA_STATUS.SCORE, group: false },
+    });
+    dl.sort((a: GxaApplicationForm, b: GxaApplicationForm) => {
+      let a_score = this.getScoreAvg(a.score) + a.networkScore;
+      let b_score = this.getScoreAvg(b.score) + b.networkScore;
+      return b_score - a_score;
+    })
+    sl.sort((a: GxaApplicationForm, b: GxaApplicationForm) => {
+      let a_score = this.getScoreAvg(a.score);
+      let b_score = this.getScoreAvg(b.score);
+      return b_score - a_score;
+    })
+    try {
+      dl = await Promise.all(dl.map(async (item: GxaApplicationForm, idx: number) => {
+        if (idx < 10) {
+          return await this.gxaApplicationFormRepository.preload({
+            ...item,
+            status: GXA_STATUS.FINALLY,
+          });
+        }
+        return await this.gxaApplicationFormRepository.preload({
+          ...item,
+          status: GXA_STATUS.SCORED,
+        });
+      }))
+      sl = await Promise.all(sl.map(async (item: GxaApplicationForm, idx: number) => {
+        if (idx < 15) {
+          return await this.gxaApplicationFormRepository.preload({
+            ...item,
+            status: GXA_STATUS.FINALLY,
+          });
+        }
+        return await this.gxaApplicationFormRepository.preload({
+          ...item,
+          status: GXA_STATUS.SCORED,
+        });
+      }))
+      await this.gxaApplicationFormRepository.save(dl);
+      await this.gxaApplicationFormRepository.save(sl);
+      return Api.ok({ sl, dl });
+    } catch (err) {
+      return Api.err(-1, err.message)
+    }
+  }
+  
+  // 一键撤回决赛名单
+  async withdrawFinallyList() {
+    try {
+      try {
+        await this.gxaApplicationFormRepository.query(
+          `update GxaApplicationForm set status = ${GXA_STATUS.SCORE} where (status = ${GXA_STATUS.FINALLY} or status = ${GXA_STATUS.SCORED}) and session = ${this.getNowSession()};`
+        );
+        return Api.ok();
+      } catch (err) {
+        return Api.err(-1, err.message)
+      }
+    } catch (err) {
+      return Api.err(-1, err.message)
+    }
   }
 }

@@ -1,15 +1,11 @@
 import { Roles } from '@/common/decorators/Role/roles.decorator';
-import { warpResponse } from '@/common/interceptors';
 import { Result } from '@/common/interface/result';
-import { RolesDto } from '@/dto/admin-user';
 import { GetRouterNoChildrenDto, GetRouterDto } from '@/dto/routers';
-import { AdminRole, userAdminRole, userRole } from '@/enum/roles';
-import { Body, Controller, Get, Param, Post, Req, UnauthorizedException } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { AdminRole } from '@/enum/roles';
+import { Body, Controller, Delete, Get, Param, Post, Put, Req } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { UserService } from '../user/user.service';
-import { RoutersService } from './routers.service';
-import { Roles as RolesEntity } from '@/entities/admin/roles.entity';
-import { GetRolesDto, UpdateRoleDto } from '@/dto/roles';
+import { GetRolesDto, UpdateRoleRouterDto, UpdateRoleInfoDto, CreateRoleDto } from '@/dto/roles';
 import { Api } from '@/common/utils/api';
 import { SwaggerOk, SwaggerPagerOk } from '@/common/decorators';
 
@@ -18,7 +14,6 @@ import { SwaggerOk, SwaggerPagerOk } from '@/common/decorators';
 @Controller('routers')
 export class RoutersController {
   constructor(
-    private readonly routersService: RoutersService,
     private readonly userService: UserService,
   ) {}
 
@@ -27,52 +22,56 @@ export class RoutersController {
   @ApiOperation({ description: '获取所有的角色, data是一个数组' })
   @SwaggerPagerOk(GetRolesDto)
   async getRoles(): Promise<Result<GetRolesDto[]>> {
-    return {
-      code: 0,
-      message: '获取成功',
-      data: await this.userService.getRoles(),
-    };
+    const list = await this.userService.getRoles();
+    return Api.ok(list);
   }
 
 
   @Get('getRouterByRole/:role')
   @Roles(AdminRole.root)
   @ApiParam({ name: 'role' })
-  @ApiOperation({ description: '获取role对应的路由' })
+  @ApiOperation({ description: '获取role(ID)对应的路由' })
   @SwaggerPagerOk(GetRouterNoChildrenDto)
-  async getRouterByRole(@Param('role') role: string) {
-    const data = this.routersService.getRouterByRole(
-      (await this.userService.getRoleByName(role)).routers
-    )
-    return {
-      code: 0,
-      message: '获取成功',
-      data
-    }
+  async getRouterByRole(@Param('role') roleId: number) {
+    const router = (await this.userService.getRolesById(roleId)).routers;
+    if (router) return Api.ok(JSON.parse(router))
+    return Api.ok([]);
   }
 
   @Post('setRoleRouters')
   @Roles(AdminRole.root)
-  @ApiOperation({ description: ''})
+  @ApiOperation({ description: '设置路由，' })
   @SwaggerOk()
-  async setRoleRouters(@Body() updateRoleDto: UpdateRoleDto) {
-    try {
-      await this.routersService.setRoleRouter(
-        await this.userService.getRoleByName(updateRoleDto.roleName),
-        updateRoleDto.routers
-      );
-      return { code: 0, message: '修改成功' };
-    } catch (err) {
-      return { code: -1, message: err };
-    }
+  async setRoleRouters(@Body() updateRoleDto: UpdateRoleRouterDto) {
+    updateRoleDto.routers = JSON.stringify(updateRoleDto.routers);
+    return this.userService.setRole(updateRoleDto);
   }
 
   @Get('menus')
   @ApiOperation({ description: '获取用户对应的路由' })
   @SwaggerPagerOk(GetRouterDto)
-  async getMenus(@Req() { user }: any): Promise<Result<GetRouterDto>> {
-    return await this.routersService.getMenus(user)
+  async getMenus(@Req() { user }: any): Promise<Result<string>> {
+    if (user.roles.routers) return Api.ok(JSON.parse(user.roles.routers))
+    return Api.ok([]);
   }
   
-
+  @Put('updateRoleInfo')
+  async updateRole(@Body() updateRoleInfoDto: UpdateRoleInfoDto) {
+    return await this.userService.updateRolesInfo(updateRoleInfoDto);
+  }
+  @Post('createRoles')
+  async createRoles(@Body() createRolesDto: CreateRoleDto) {
+    const item = await this.userService.getRoleByName(createRolesDto.roleName);
+    if (item) return Api.err(-1, '角色名重复');
+    await this.userService.createRoles(createRolesDto);
+    return Api.ok();
+  }
+  @Delete('deleteRoles/:roleId')
+  async deleteRoles(@Param('roleId') roleId: number) {
+    if (roleId <= 31) return Api.err(-1, '基本角色不允许被删除');
+    const item = await this.userService.getRolesById(roleId);
+    if (!item) return Api.err(-2, '角色不存在');
+    await this.userService.deleteRoles(roleId);
+    return Api.ok()
+  }
 }

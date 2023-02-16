@@ -1,13 +1,16 @@
 import { ApiProperty, PickType} from '@nestjs/swagger';
-import { IsArray, IsNotEmpty } from 'class-validator';
-import { CreateRouterDto } from '../routers';
+import { IsNotEmpty } from 'class-validator';
 import { RolesDto } from './allRoles.dto';
 
-export class UpdateRoleDto extends PickType(RolesDto, [
-  'roleName',
+export class UpdateRoleRouterDto extends PickType(RolesDto, [
+  'id',
 ]) {
-  @IsArray()
   @IsNotEmpty()
-  @ApiProperty({ isArray: true })
-  routers: CreateRouterDto;
+  @ApiProperty({ description: '路由数组(字符串)' })
+  routers: any;
 }
+export class UpdateRoleInfoDto extends PickType(RolesDto, [
+  'roleName',
+  'roleDescription',
+  'id',
+]) {}
